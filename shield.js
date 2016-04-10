@@ -1,6 +1,5 @@
 // dependencies
 var express = require('express');
-var app = express();
 
 // express middleware
 var cookieParser = require('cookie-parser');
@@ -9,7 +8,7 @@ var morgan = require('morgan');
 // templating engine
 var htmlEngine = require('gaikan');
 
-var port = process.env.PORT || 8080;
+var app = express();
 var env = app.get('env');
 
 /**
@@ -82,8 +81,10 @@ if (env == 'development') {
 /**
  * run server
  */
-function startServer(id){
+function startServer(id) {
 
+    var shield = require("./lib/shield-start");
+    
     logOptions._source = function(tokens, req, res){
         return id + ": " +  morgan['dev'](tokens, req, res);
     };
@@ -92,8 +93,17 @@ function startServer(id){
         console.error("%s: %s", id, message);
     }; 
 
-    app.listen(port, "localhost", function() {
-        console.log('%s: [%s] listening on port %d', id, env, this.address().port);
+    shield.create({
+        hostname: "localhost",
+        port: process.env.PORT || 8080,
+        rootDir: __dirname + "/root",
+        tls: {
+            key: "shield-key.pem",
+            cert: "shield-cert.pem",
+            ca: "ca-cert.pem"
+        }
+    }, app, function() {
+        console.log('%s: [%s] listening on port %d (%s)', id, env, this.address().port, this.type);
     });
 }
 if(require.main === module){
