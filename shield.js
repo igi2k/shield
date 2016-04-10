@@ -32,11 +32,14 @@ app.set('views', __dirname + '/views');
 app.set('view engine', '.html');
 app.engine('html', htmlEngine);
 
-app.route("/favicon.ico").get(function(req, res){
-    res.sendfile(__dirname + "/root/favicon.ico");
-});
+app.use("/static", express.static(__dirname + '/static'));
 
 var config = require("./shield-config");
+
+app.route("/").get(function(req, res){
+    res.status(200).render('index', { title: "Mapping", apps: config.apps });
+});
+
 var ShieldProxy = require("./lib/shield-proxy");
 var authService = require("./lib/auth-service")(app);
 var shieldAuth = [require("./lib/check-auth")(authService), require("./lib/basic-auth")(authService)];
@@ -49,7 +52,7 @@ function createShield(app){
     // link
     this.use(app.path, shieldMapping);
 }
-config.app.forEach(createShield, app);
+config.apps.forEach(createShield, app);
 // setup access
 app.locals.secretKey = config.secretKey;
 app.locals.users = config.users;
@@ -58,7 +61,7 @@ app.locals.users = config.users;
  * Not found handler
  */
 app.use(function(req, res){
-    res.status(404).render('404', { title: 404 });
+    res.status(404).render('404', { title: "404" });
 });
 
 /**
@@ -69,7 +72,7 @@ if (env == 'development') {
         var stack = (err.stack || '').split('\n').slice(1);
         var message = err.message;
         app.locals.log(err.stack);
-        res.status(500).render('500', { title: 500, err: {
+        res.status(500).render('500', { title: "500", err: {
             message: message,
             stack: stack
         }});
@@ -85,12 +88,8 @@ function startServer(id){
         return id + ": " +  morgan['dev'](tokens, req, res);
     };
     
-    app.locals.log = function(message, req){
-        if(req){
-            console.error("%s: [%s] %s", id, req.ip, message);
-        } else {
-            console.error("%s: %s", id, message);
-        }
+    app.locals.log = function(message){
+        console.error("%s: %s", id, message);
     }; 
 
     app.listen(port, "localhost", function() {

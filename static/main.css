@@ -1,0 +1,55 @@
+body {
+  padding: 80px 100px;
+  font: 13px "Helvetica Neue", "Lucida Grande", "Arial";
+  background: #ECE9E9 -webkit-gradient(linear, 0% 0%, 0% 100%, from(#fff), to(#ECE9E9));
+  background-repeat: no-repeat;
+  color: #555;
+  -webkit-font-smoothing: antialiased;
+  min-width: 500px;
+}
+h1, h2 {
+  font-size: 22px;
+  color: #343434;
+}
+h1 em, h2 em {
+  padding: 0 5px;
+  font-weight: normal;
+}
+h1 {
+  font-size: 60px;
+}
+h2 {
+  margin-top: 10px;
+}
+ul li {
+  list-style: none;
+}
+.stacktrace {
+  margin-left: 60px;
+}
+.mapping {
+    display: flex;
+    align-items: center;
+}
+.mapping
+    h1 + div {
+        margin-left: 10%;
+        flex: 1;
+    }
+.mapping 
+    img {
+        display: block;
+        padding-top: 20px;
+        min-width: 225px;
+        min-height: 268px;
+    }
+.mapping    
+    table {
+        text-align: left;
+        min-width: 100%;
+    }
+.mapping
+    table thead th:nth-child(1) {
+        width: 20%;
+        padding-right: 10px;
+    }        
