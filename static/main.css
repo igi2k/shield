@@ -53,3 +53,17 @@ ul li {
         width: 20%;
         padding-right: 10px;
     }        
+.top-bar {
+    height: 32px;
+    background-color: #EDEAEA;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+}
+.top-bar .right-container {
+    padding: 0 20px;
+}

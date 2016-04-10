@@ -1,3 +1,9 @@
+<div class="top-bar">
+    @{var auth = root._locals.auth;}
+    <div class="right-container" data-if="auth">
+        #{auth.user}
+    </div>
+</div> 
 <div class="mapping">
     <h1>Shield<img src="/static/shield.png"/></h1>
     <div>

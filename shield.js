@@ -35,13 +35,15 @@ app.use("/static", express.static(__dirname + '/static'));
 
 var config = require("./shield-config");
 
+var ShieldProxy = require("./lib/shield-proxy");
+var authService = require("./lib/auth-service")(app);
+var shieldAuth = [require("./lib/check-auth")(authService), require("./lib/basic-auth")(authService)];
+
+app.route("/").all(shieldAuth[0]);
 app.route("/").get(function(req, res){
     res.status(200).render('index', { title: "Mapping", apps: config.apps });
 });
 
-var ShieldProxy = require("./lib/shield-proxy");
-var authService = require("./lib/auth-service")(app);
-var shieldAuth = [require("./lib/check-auth")(authService), require("./lib/basic-auth")(authService)];
 function createShield(app){
     var shieldMapping = express.Router();
     // shield authentication
