@@ -6,3 +6,5 @@ node_modules/
 # keys
 root/*.pem
 root/*.srl
+# config
+root/config.json
