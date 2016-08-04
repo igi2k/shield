@@ -16,7 +16,6 @@ var app = express();
  */
 app.use(cookieParser());
 
-htmlEngine.options.layout = 'layout/main';
 app.set('views', __dirname + '/views');
 app.set('view engine', '.html');
 app.engine('html', htmlEngine);
@@ -44,10 +43,18 @@ function createShield(app){
     var shieldMapping = express.Router();
     // shield authentication
     shieldMapping.route("*").all(shieldAuth);
-    // shield proxy
-    shieldMapping.route("*").all(ShieldProxy(app.url));
+    if(app.hasOwnProperty("url")) {
+        // shield proxy
+        shieldMapping.route("*").all(ShieldProxy(app.url));
+    }
     // link
     this.use(app.path, shieldMapping);
+    // add associated app module
+    if(app.hasOwnProperty("module")) {
+        var moduleName = (app.development ? "./apps/" : "") + app.module;
+        // we need to link it this way to get mount event
+        this.use(app.path, require(moduleName));
+    }
 }
 
 function bootstrap(logger, env) {
@@ -99,7 +106,7 @@ function startServer(id) {
     
     shield.create({
         hostname: config.hostname,
-        port: process.env.PORT || 8080,
+        port: config.port || 8080,
         rootDir: __dirname + "/root",
         tls: config.tls
     }, app, function() {

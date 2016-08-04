@@ -1,6 +1,8 @@
 # environment
 .DS_Store
 .vscode/
+.idea/
+*.iml
 # dependencies
 node_modules/
 # keys
@@ -8,3 +10,5 @@ root/*.pem
 root/*.srl
 # config
 root/config.json
+# application modules
+apps/

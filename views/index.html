@@ -1,26 +1,32 @@
-<div class="top-bar">
-    @{var auth = root._locals.auth;}
-    <div class="right-container" data-if="auth">
-        #{auth.user}
-    </div>
-</div> 
-<div class="mapping">
-    <h1>Shield<img src="/static/shield.png"/></h1>
-    <div>
-        <h2>.#{root.title|lower}</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Application</th>
-                    <th>Path</th>
-                </tr>
-            </thead>
-            <tbody data-for="app in root.apps">
-                <tr>
-                    <td>#{app.name}</td>
-                    <td><a href="#{app.path}">#{app.path}</a></td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
+<!DOCTYPE html>
+<html data-include="layout/main">
+    <head data-fragment="head" data-include="layout/main-head"></head>
+    <body data-fragment="content">
+        <div class="top-bar">
+            @{var auth = root._locals.auth;}
+            <div class="right-container" data-if="auth">
+                #{auth.user}
+            </div>
+        </div>
+        <div class="mapping">
+            <h1>Shield<img src="/static/shield.png"/></h1>
+            <div>
+                <h2>.#{root.title|lower}</h2>
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Application</th>
+                        <th>Path</th>
+                    </tr>
+                    </thead>
+                    <tbody data-for="app in root.apps">
+                    <tr>
+                        <td>#{app.name}</td>
+                        <td><a href="#{app.path}">#{app.path}</a></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </body>
+</html>

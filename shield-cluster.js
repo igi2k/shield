@@ -8,15 +8,17 @@ var winston = require('winston');
 var colors = require('colors');
 var path = require('path');
 var fs = require('fs');
+var stm = require('./lib/stm');
 
 function startWorker(){
     var worker = cluster.fork();
     var prefix = worker.id + ": ";
     
     worker.on("message", function(message){ // serialize console logs
-        
-        if(message.type == 'log'){
+        if(message.type == 'log') {
             process.stdout.write(prefix + message.data);
+        } else if(message.type == 'stm') {
+            stm.handle(worker, message)
         } else {
             winston.error("unsupported message: %s", JSON.stringify(message));
         }
