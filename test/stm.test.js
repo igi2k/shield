@@ -9,7 +9,7 @@ function startWorker() {
         if(message.type == 'log') {
             process.stdout.write(prefix + message.data);
         } else if(message.type == 'stm') {
-            stm.handle(worker, message)
+            stm.handle(worker, message);
         } else {
             console.error("unsupported message: %s", JSON.stringify(message));
         }
@@ -24,7 +24,7 @@ function workerTask(id) {
         // console.log("%d-: %s", id, JSON.stringify(entry))
         entry.value++;
         return clientMap.set(key, entry).then(function(entry) {
-            console.log("%d+: %s", id, JSON.stringify(entry))
+            console.log("%d+: %s", id, JSON.stringify(entry));
         }, function(entry) { // stm error
             // console.log("%d retry: %s", id, JSON.stringify(entry));
             return processEntry(entry);
@@ -34,23 +34,23 @@ function workerTask(id) {
     setInterval(function () {
         clientMap.get(key, { value: 0 }).then(processEntry).catch(function(error) {
             console.error("%d: %s", id, error);
-        })
+        });
     }, 1000);
     setInterval(function () {
         clientMap.get(key, { value: 0 }).then(processEntry).catch(function(error) {
             console.error("%d: %s", id, error);
-        })
+        });
     }, 500);
     setInterval(function () {
         clientMap.get(key, { value: 0 }).then(processEntry).catch(function(error) {
             console.error("%d: %s", id, error);
-        })
+        });
     }, 1000);
 }
 
 if(cluster.isMaster){
 
-    var numCPUs = require('os').cpus().length / 2;
+    var numCPUs = require('os').cpus().length;
 
     for (var i = 0; i < numCPUs; i++) {
         startWorker();

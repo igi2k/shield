@@ -3,9 +3,9 @@
  * User: IGI2k
  * Date: 06/08/2014
  */
-var cluster = require("cluster");
+var cluster = require('cluster');
 var winston = require('winston');
-var colors = require('colors');
+var colors = require('winston/node_modules/colors/safe');
 var path = require('path');
 var fs = require('fs');
 var stm = require('./lib/stm');
@@ -18,7 +18,7 @@ function startWorker(){
         if(message.type == 'log') {
             process.stdout.write(prefix + message.data);
         } else if(message.type == 'stm') {
-            stm.handle(worker, message)
+            stm.handle(worker, message);
         } else {
             winston.error("unsupported message: %s", JSON.stringify(message));
         }
@@ -27,13 +27,13 @@ function startWorker(){
 
 function displayBanner(out){
     var banner = fs.readFileSync(path.resolve(__dirname, "root", "banner")).toString(); 
-    out.write(banner.yellow.bold + "\n");
+    out.write(colors.yellow.bold(banner) + "\n");
 }
 
 if(cluster.isMaster){
 
     displayBanner(process.stdout);
-    var numCPUs = require('os').cpus().length / 2;
+    var numCPUs = require('os').cpus().length;
 
     for (var i = 0; i < numCPUs; i++) {
         startWorker();
