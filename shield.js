@@ -16,11 +16,11 @@ var app = express();
  */
 app.use(cookieParser());
 
-app.set('views', __dirname + '/views');
+app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', '.html');
 app.engine('html', htmlEngine);
 
-app.use("/static", express.static(__dirname + '/static'));
+app.use("/static", express.static(path.join(__dirname, 'static')));
 
 var config = loadConfig();
 
@@ -107,7 +107,7 @@ function startServer(id) {
     shield.create({
         hostname: config.hostname,
         port: config.port || 8080,
-        rootDir: __dirname + "/root",
+        rootDir: path.join(__dirname, "root"),
         tls: config.tls
     }, app, function() {
         app.locals.logger.log('[%s] listening on port %d (%s)', env, this.address().port, this.type);
