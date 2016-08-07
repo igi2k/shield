@@ -3,6 +3,11 @@
   "version": "0.2.0",
   "description": "Authentication shield for web apps",
   "author": "Pavel Nejedly <pavel.nejedly@atlas.cz>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/igi2k/shield.git"
+  },
+  "license": "Apache-2.0",
   "main": "shield.js",
   "dependencies": {
     "basic-auth": "^1.0.4",
@@ -16,7 +21,8 @@
     "winston": "^2.2.0"
   },
   "devDependencies": {
-    "jshint": "^2.9.2"
+    "jshint": "^2.9.2",
+    "mocha": "^3.0.1"
   },
   "engine": "node >= 4.4"
 }
