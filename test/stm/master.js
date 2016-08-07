@@ -1,6 +1,6 @@
-const cluster = require('cluster');
-const stm = require('../../lib/stm');
-const workerTask = require('./worker');
+const cluster = require("cluster");
+const stm = require("../../lib/stm");
+const workerTask = require("./worker");
 
 function ok(result) {
     process.send({ type: "result", result: result });
@@ -15,16 +15,20 @@ function fail(error) {
 }
 if (!cluster.isMaster) {
     var writes = process.argv[2];
-    workerTask(cluster.worker.id, writes).then(ok, fail).then(function () {
+    var useRetryFn = process.argv[3] == "true";
+    workerTask(cluster.worker.id, writes, useRetryFn).then(ok, fail).then(function () {
         process.disconnect();
     });
     return;
 }
-
-var numCPUs = require('os').cpus().length;
+ 
+require.main.paths.push(require("path").resolve(".")); // fix project based resolve
+var numCPUs = require("os").cpus().length;
 
 var result = [];
 var total = process.argv[2];
+var useRetryFn = process.argv[3] == "true";
+
 var writesPerTask = Math.round(total / numCPUs);
 
 function startWorker() {
@@ -34,15 +38,14 @@ function startWorker() {
     }
     total -= writesPerTask;
     cluster.setupMaster({
-        args: [writes],
+        args: [writes, useRetryFn],
     });
     var worker = cluster.fork();
-    var prefix = worker.id + ": ";
 
     worker.on("message", function (message) {
-        if (message.type == 'result') {
+        if (message.type == "result") {
             result.push(message.result);
-        } else if (message.type == 'stm') {
+        } else if (message.type == "stm") {
             stm.handle(worker, message);
         } else {
             console.error("unsupported message: %s", JSON.stringify(message));

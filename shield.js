@@ -1,13 +1,12 @@
 // dependencies
-var express = require('express');
-var path = require('path');
+const express = require("express");
+const path = require("path");
 
 // express middleware
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
-var morgan = require('morgan');
+const cookieParser = require("cookie-parser");
+const morgan = require("morgan");
 // templating engine
-var htmlEngine = require('gaikan');
+const htmlEngine = require("gaikan");
 
 var app = express();
 
@@ -16,11 +15,11 @@ var app = express();
  */
 app.use(cookieParser());
 
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', '.html');
-app.engine('html', htmlEngine);
+app.set("views", path.join(__dirname, "views"));
+app.set("view engine", ".html");
+app.engine("html", htmlEngine);
 
-app.use("/static", express.static(path.join(__dirname, 'static')));
+app.use("/static", express.static(path.join(__dirname, "static")));
 
 var config = loadConfig();
 
@@ -59,12 +58,12 @@ function createShield(app){
 
 function bootstrap(logger, env) {
     
-    if (env == 'development') {
+    if (env == "development") {
         app.use(morgan(logger.format, logger.options));
     }
     app.route("/").all(shieldAuth[0]);
     app.route("/").get(function(req, res){
-        res.status(200).render('index', { title: "Mapping", apps: config.apps });
+        res.status(200).render("index", { title: "Mapping", apps: config.apps });
     });
     
     config.apps.forEach(createShield, app);
@@ -73,18 +72,18 @@ function bootstrap(logger, env) {
      * Not found handler
      */
     app.use(function(req, res){
-        res.status(404).render('404', { title: "404" });
+        res.status(404).render("404", { title: "404" });
     });
 
     /**
      * Error handler
      */
-    if (env == 'development') {
-        app.use(function errorHandler(err, req, res, next){
-            var stack = (err.stack || '').split('\n').slice(1);
+    if (env == "development") {
+        app.use(function errorHandler(err, req, res, next) { //eslint-disable-line
+            var stack = (err.stack || "").split("\n").slice(1);
             var message = err.message;
             app.locals.logger.error(err.stack);
-            res.status(500).render('500', { title: "500", err: {
+            res.status(500).render("500", { title: "500", err: {
                 message: message,
                 stack: stack
             }});
@@ -95,10 +94,10 @@ function bootstrap(logger, env) {
 /**
  * run server
  */
-function startServer(id) {
+function startServer() {
 
     var shield = require("./lib/shield-start");
-    var env = app.get('env');
+    var env = app.get("env");
 
     var logger = app.locals.logger = require("./lib/shield-logger");
 
@@ -110,7 +109,7 @@ function startServer(id) {
         rootDir: path.join(__dirname, "root"),
         tls: config.tls
     }, app, function() {
-        app.locals.logger.log('[%s] listening on port %d (%s)', env, this.address().port, this.type);
+        app.locals.logger.log("[%s] listening on port %d (%s)", env, this.address().port, this.type);
     }).on("error", function(err){
         app.locals.logger.error(err);
     });
@@ -118,8 +117,8 @@ function startServer(id) {
 
 if(require.main === module){
     // generate password hash
-    if(process.argv[2] == 'hash'){
-        console.log(AuthService.generateKey({pass: process.argv[3]}, app.locals.secretKey));
+    if(process.argv[2] == "hash"){
+        console.log(AuthService.generateKey({pass: process.argv[3]}, app.locals.secretKey)); //eslint-disable-line
         return;
     }
     startServer();

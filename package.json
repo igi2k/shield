@@ -21,8 +21,11 @@
     "winston": "^2.2.0"
   },
   "devDependencies": {
-    "jshint": "^2.9.2",
+    "eslint": "^3.2.2",
     "mocha": "^3.0.1"
+  },
+  "scripts": {
+    "test": "mocha"
   },
   "engine": "node >= 4.4"
 }
