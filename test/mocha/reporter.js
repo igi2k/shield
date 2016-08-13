@@ -13,23 +13,23 @@ function ReporterEx(runner) {
 
     function reportHook(test) {
         test.ctx.report = function (data, formatter) {
-            test.__report = function() {
+            test.__report = function () {
                 return formatter.call(this, data);
             };
         };
     }
-    runner.on("suite", function(){
+    runner.on("suite", function () {
         ++indents;
     });
-    runner.on("suite end", function(){
+    runner.on("suite end", function () {
         --indents;
     });
-    runner.on("test", function(test){
+    runner.on("test", function (test) {
         reportHook(test);
     });
-    runner.on("test end", function(test){
+    runner.on("test end", function (test) {
         var testIndent = test.state == "failed" ? 4 : 3;
-        if(test.__report) {
+        if (test.__report) {
             console.log(indent(testIndent) + test.__report.call()); //eslint-disable-line
         }
     });

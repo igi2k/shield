@@ -34,7 +34,7 @@ app.locals.users = config.users;
 
 
 function loadConfig(){
-    var fileName = path.resolve(__dirname, "root", "config.json");
+    var fileName = path.join(__dirname, "root", "config.json");
     return require(fileName);
 }
 
@@ -57,7 +57,13 @@ function createShield(app){
 }
 
 function bootstrap(logger, env) {
-    
+
+    var server = require("./lib/shield-start").create({
+        rootDir: path.join(__dirname, "root"),
+        tls: config.tls
+    }, app);
+    app.server = server;
+
     if (env == "development") {
         app.use(morgan(logger.format, logger.options));
     }
@@ -65,7 +71,7 @@ function bootstrap(logger, env) {
     app.route("/").get(function(req, res){
         res.status(200).render("index", { title: "Mapping", apps: config.apps });
     });
-    
+
     config.apps.forEach(createShield, app);
 
     /**
@@ -89,6 +95,8 @@ function bootstrap(logger, env) {
             }});
         });
     }
+
+    return server;
 }
 
 /**
@@ -96,22 +104,14 @@ function bootstrap(logger, env) {
  */
 function startServer() {
 
-    var shield = require("./lib/shield-start");
     var env = app.get("env");
-
     var logger = app.locals.logger = require("./lib/shield-logger");
 
-    bootstrap(logger, env);
-    
-    shield.create({
-        hostname: config.hostname,
-        port: config.port || 8080,
-        rootDir: path.join(__dirname, "root"),
-        tls: config.tls
-    }, app, function() {
-        app.locals.logger.log("[%s] listening on port %d (%s)", env, this.address().port, this.type);
-    }).on("error", function(err){
+    bootstrap(logger, env).on("error", function(err){
         app.locals.logger.error(err);
+    })
+    .listen(config.port || 8080, config.hostname, function() {
+        app.locals.logger.log("[%s] listening on port %d (%s)", env, this.address().port, this.type);
     });
 }
 
