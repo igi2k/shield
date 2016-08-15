@@ -24,9 +24,15 @@ app.use("/static", express.static(path.join(__dirname, "static")));
 var config = loadConfig();
 
 var ShieldProxy = require("./lib/shield-proxy");
+var ShieldAccess = require("./lib/shield-access");
 var AuthService = require("./lib/auth-service");
 var authService = AuthService(app);
 var shieldAuth = [require("./lib/check-auth")(authService), require("./lib/auth/basic-auth")(authService)];
+
+// setup html engine helpers
+htmlEngine.set["hasRole"] = function (root, role) { 
+    return role == undefined || ShieldAccess.hasRole(root, role);
+};
 
 // setup access
 app.locals.secretKey = config.secretKey;
@@ -42,6 +48,10 @@ function createShield(app){
     var shieldMapping = express.Router();
     // shield authentication
     shieldMapping.route("*").all(shieldAuth);
+    // shield access controll
+    if(app.hasOwnProperty("access")){
+        shieldMapping.route("*").all(ShieldAccess(app.access));
+    }
     if(app.hasOwnProperty("url")) {
         // shield proxy
         shieldMapping.route("*").all(ShieldProxy(app.url));

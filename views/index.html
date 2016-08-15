@@ -20,10 +20,12 @@
                     </tr>
                     </thead>
                     <tbody data-for="app in root.apps">
-                    <tr>
-                        <td>#{app.name}</td>
-                        <td><a href="#{app.path}">#{app.path}</a></td>
-                    </tr>
+                    <container data-extract data-if="set.hasRole(root,app.access)">
+                        <tr>
+                            <td>#{app.name}</td>
+                            <td><a href="#{app.path}">#{app.path}</a></td>
+                        </tr>
+                    </container>
                     </tbody>
                 </table>
             </div>
