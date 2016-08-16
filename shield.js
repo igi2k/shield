@@ -30,8 +30,9 @@ var authService = AuthService(app);
 var shieldAuth = [require("./lib/check-auth")(authService), require("./lib/auth/basic-auth")(authService)];
 
 // setup html engine helpers
-htmlEngine.set["hasRole"] = function (root, role) { 
-    return role == undefined || ShieldAccess.hasRole(root, role);
+// TODO: make single param function
+htmlEngine.set["hasRole"] = function (auth, role) {
+    return role == undefined || auth && auth.hasRole(root, role);
 };
 
 // setup access

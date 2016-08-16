@@ -20,7 +20,7 @@
                     </tr>
                     </thead>
                     <tbody data-for="app in root.apps">
-                    <container data-extract data-if="set.hasRole(root,app.access)">
+                    <container data-extract data-if="set.hasRole(root.auth, app.access)">
                         <tr>
                             <td>#{app.name}</td>
                             <td><a href="#{app.path}">#{app.path}</a></td>
