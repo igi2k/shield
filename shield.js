@@ -32,7 +32,7 @@ var shieldAuth = [require("./lib/check-auth")(authService), require("./lib/auth/
 // setup html engine helpers
 // TODO: make single param function
 htmlEngine.set["hasRole"] = function (auth, role) {
-    return role == undefined || auth && auth.hasRole(root, role);
+    return role == undefined || auth && auth.hasRole(role);
 };
 
 // setup access
@@ -140,7 +140,9 @@ function startServer() {
 if(require.main === module){
     // generate password hash
     if(process.argv[2] == "hash"){
-        console.log(AuthService.generateKey({pass: process.argv[3]}, app.locals.secretKey)); //eslint-disable-line
+        AuthService.generateKey({pass: process.argv[3]}).catch(function(err){
+            return `ERROR: ${err.message}`;
+        }).then(console.log); //eslint-disable-line
         return;
     }
     startServer();
