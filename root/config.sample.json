@@ -8,11 +8,14 @@
     ],
     "users": {
         "user": {
-            "key": "$argon2i$v=19$m=4096,t=3,p=1$dbFytMSKOyJr86SE7Wi1+A$PCOThi1SLaHrP+d6HjIbsbDJDU/X9JK+3SyyID0ZP3E",
+            "key": "rSNqPjQFg6nXNOBigHBDrBnzfJZBnw75pCqF0ibQauFhFdxllBr9JcL60v1+LWsDi8+aqwstAdin3dmKNKTnhK8Cxak/NroKRbNwybKr9riDj5NPIFiTnMuQVvgDWrdC",
             "roles": ["test"]
         }
     },
-    "secretKey": "top-secret-key",
+    "keys": {
+        "cookie": "key1",
+        "password": "key2"
+    },
     "tls": {
         "key": "shield-key.pem",
         "cert": "shield-cert.pem",

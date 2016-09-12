@@ -36,7 +36,7 @@ htmlEngine.set["hasRole"] = function (auth, role) {
 };
 
 // setup access
-app.locals.secretKey = config.secretKey;
+app.keys = config.keys;
 app.locals.users = config.users;
 
 
@@ -140,7 +140,7 @@ function startServer() {
 if(require.main === module){
     // generate password hash
     if(process.argv[2] == "hash"){
-        AuthService.generateKey({pass: process.argv[3]}).catch(function(err){
+        AuthService.generateAuthHash({pass: process.argv[3]}, config.keys.password).catch(function(err){
             return `ERROR: ${err.message}`;
         }).then(console.log); //eslint-disable-line
         return;
