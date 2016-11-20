@@ -4,8 +4,7 @@
  * Date: 06/08/2014
  */
 const cluster = require("cluster");
-const winston = require("winston");
-const colors = require("winston/node_modules/colors/safe");
+const color = require("./lib/util/color");
 const path = require("path");
 const fs = require("fs");
 const stm = require("./lib/stm");
@@ -16,18 +15,18 @@ function startWorker() {
 
     worker.on("message", function (message) { // serialize console logs
         if (message.type == "log") {
-            process.stdout.write(prefix + message.data);
+            process.stdout.write(`${prefix}${message.data}`);
         } else if (message.type == "stm") {
             stm.handle(worker, message);
         } else {
-            winston.error("unsupported message: %s", JSON.stringify(message));
+            process.stdout.write(`${prefix}unsupported message: ${JSON.stringify(message)}\n`);
         }
     });
 }
 
 function displayBanner(out) {
     var banner = fs.readFileSync(path.resolve(__dirname, "root", "banner")).toString();
-    out.write(colors.yellow.bold(banner) + "\n");
+    out.write(`${color.yellow.bold}${banner}${color.reset}\n`);
 }
 
 if (cluster.isMaster) {
@@ -40,7 +39,7 @@ if (cluster.isMaster) {
     }
 
     cluster.on("exit", function (worker, code, signal) {
-        winston.log("main: Worker %d died with exit code %d (%s)", worker.id, code, signal);
+        process.stdout.write(`main: Worker ${worker.id} died with exit code ${code} (${signal})\n`);
         startWorker();
     });
 
