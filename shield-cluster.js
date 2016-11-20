@@ -10,14 +10,14 @@ const path = require("path");
 const fs = require("fs");
 const stm = require("./lib/stm");
 
-function startWorker(){
+function startWorker() {
     var worker = cluster.fork();
     var prefix = worker.id + ": ";
-    
-    worker.on("message", function(message) { // serialize console logs
-        if(message.type == "log") {
+
+    worker.on("message", function (message) { // serialize console logs
+        if (message.type == "log") {
             process.stdout.write(prefix + message.data);
-        } else if(message.type == "stm") {
+        } else if (message.type == "stm") {
             stm.handle(worker, message);
         } else {
             winston.error("unsupported message: %s", JSON.stringify(message));
@@ -25,12 +25,12 @@ function startWorker(){
     });
 }
 
-function displayBanner(out){
-    var banner = fs.readFileSync(path.resolve(__dirname, "root", "banner")).toString(); 
+function displayBanner(out) {
+    var banner = fs.readFileSync(path.resolve(__dirname, "root", "banner")).toString();
     out.write(colors.yellow.bold(banner) + "\n");
 }
 
-if(cluster.isMaster){
+if (cluster.isMaster) {
 
     displayBanner(process.stdout);
     var numCPUs = require("os").cpus().length;
@@ -39,7 +39,7 @@ if(cluster.isMaster){
         startWorker();
     }
 
-    cluster.on("exit", function(worker, code, signal){
+    cluster.on("exit", function (worker, code, signal) {
         winston.log("main: Worker %d died with exit code %d (%s)", worker.id, code, signal);
         startWorker();
     });

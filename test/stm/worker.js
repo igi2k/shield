@@ -31,7 +31,7 @@ module.exports = function workerTask(id, executionLimit, useRetryFn) {
         function processEntry(entry) {
             entry = retryFn(entry);
             var retryModule = useRetryFn && "test/stm/retry";
-            return clientMap.set(key, entry, retryModule).then(function (entry) {
+            return clientMap.set(key, entry, { retryModule }).then(function (entry) {
                 if (++writes == executionLimit) {
                     resolve({
                         worker: id,

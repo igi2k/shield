@@ -42,8 +42,8 @@ describe("STM", function () {
             this.timeout(timeout);
             var report = reportFn(this);
 
-            var path = require("path").resolve(__dirname, "./stm/master");
-            var child = require("child_process").fork(path, [maxExecutions, false], { execArgv: [] });
+            var path = require("path").resolve(__dirname, "./cluster/master");
+            var child = require("child_process").fork(path, ["../stm/worker", maxExecutions, false], { execArgv: [] });
             var result;
             child.on("message", function (data) {
                 result = data;
@@ -71,9 +71,9 @@ describe("STM", function () {
             this.timeout(timeout);
             var report = reportFn(this);
 
-            var path = require("path").resolve(__dirname, "./stm/master");
+            var path = require("path").resolve(__dirname, "./cluster/master");
             var cwd = require("path").resolve(__dirname, "..");
-            var child = require("child_process").fork(path, [maxExecutions, true], { execArgv: [], cwd: cwd });
+            var child = require("child_process").fork(path, ["../stm/worker", maxExecutions, true], { execArgv: [], cwd: cwd });
             var result;
             child.on("message", function (data) {
                 result = data;

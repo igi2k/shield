@@ -38,7 +38,11 @@ htmlEngine.set["hasRole"] = function (auth, role) {
 // setup access
 app.keys = config.keys;
 app.locals.users = config.users;
-
+// exposed api
+app.locals.api = {
+    stm: require("./lib/stm"),
+    queue: require("./lib/stm-queue")
+};
 
 function loadConfig(){
     var fileName = path.join(__dirname, "root", "config.json");

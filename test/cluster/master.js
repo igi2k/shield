@@ -1,6 +1,5 @@
 const cluster = require("cluster");
 const stm = require("../../lib/stm");
-const workerTask = require("./worker");
 
 function ok(result) {
     process.send({ type: "result", result: result });
@@ -14,22 +13,24 @@ function fail(error) {
     });
 }
 if (!cluster.isMaster) {
-    var writes = process.argv[2];
-    var useRetryFn = process.argv[3] == "true";
+    const workerTask = require(process.argv[2]);
+    const writes = +process.argv[3];
+    const useRetryFn = process.argv[4] == "true";
     workerTask(cluster.worker.id, writes, useRetryFn).then(ok, fail).then(function () {
         process.disconnect();
     });
     return;
 }
- 
+
+// CONFIGURE MASTER
+
 require.main.paths.push(require("path").resolve(".")); // fix project based resolve
 var numCPUs = require("os").cpus().length;
 
 var result = [];
-var total = process.argv[2];
-var useRetryFn = process.argv[3] == "true";
+var total = process.argv[3];
 
-var writesPerTask = Math.round(total / numCPUs);
+var writesPerTask = Math.ceil(total / numCPUs);
 
 function startWorker() {
     var writes = writesPerTask;
@@ -38,7 +39,7 @@ function startWorker() {
     }
     total -= writesPerTask;
     cluster.setupMaster({
-        args: [writes, useRetryFn],
+        args: [process.argv[2], writes, process.argv[4]]
     });
     var worker = cluster.fork();
 
@@ -66,4 +67,3 @@ cluster.on("exit", function (worker, code, signal) {
 for (var i = 0; i < numCPUs; i++) {
     startWorker();
 }
-
