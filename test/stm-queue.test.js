@@ -1,6 +1,24 @@
 /// Shared Memory test
 describe("STM Queue", function () {
-    
+
+    describe("standalone", function () {
+        var maxExecutions = 50;
+        var timeout = "10s";
+
+        it(`should execute ${maxExecutions} times`, function (done) {
+            this.timeout(timeout);
+
+            require("./stm-queue/worker")(0, maxExecutions).then(function (result) {
+                if (result.executions == maxExecutions) {
+                    done();
+                } else {
+                    done(new Error(JSON.stringify(result)));
+                }
+            }, done);
+
+        });
+    });
+
     describe("in cluster", function () {
         var maxExecutions = 250;
         var timeout = "5s";
