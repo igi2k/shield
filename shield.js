@@ -43,6 +43,12 @@ app.locals.api = {
     stm: require("./lib/stm"),
     queue: require("./lib/stm-queue")
 };
+// logging
+const ipLookup = config["ip-lookup"] || {};
+morgan.token("remote-addr-lookup", function(req){
+    var ip = this["remote-addr"](req);
+    return ipLookup[ip] || ip;
+});
 
 function loadConfig(){
     var fileName = path.join(__dirname, "root", "config.json");
