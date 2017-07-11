@@ -150,12 +150,13 @@ function startServer() {
 if(require.main === module){
     // generate password hash
     if(process.argv[2] == "hash"){
-        AuthService.generateAuthHash({pass: process.argv[3]}, config.keys.password).catch(function(err){
+        return AuthService.generateAuthHash({pass: process.argv[3]}, config.keys.password)
+        .catch((err) => {
             return `ERROR: ${err.message}`;
-        }).then(console.log); //eslint-disable-line
-        return;
+        })
+        .then(console.log); //eslint-disable-line
     }
     startServer();
-}else {
+} else {
     module.exports = startServer;
 }

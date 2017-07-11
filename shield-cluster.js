@@ -10,10 +10,10 @@ const fs = require("fs");
 const stm = require("./lib/stm");
 
 function startWorker() {
-    var worker = cluster.fork();
-    var prefix = worker.id + ": ";
+    const worker = cluster.fork();
+    const prefix = worker.id + ": ";
 
-    worker.on("message", function (message) { // serialize console logs
+    worker.on("message", (message) => { // serialize console logs
         if (message.type == "log") {
             process.stdout.write(`${prefix}${message.data}`);
         } else if (message.type == "stm") {
@@ -25,23 +25,23 @@ function startWorker() {
 }
 
 function displayBanner(out) {
-    var banner = fs.readFileSync(path.resolve(__dirname, "root", "banner")).toString();
+    const banner = fs.readFileSync(path.resolve(__dirname, "root", "banner")).toString();
     out.write(`${color.yellow.bold}${banner}${color.reset}\n`);
 }
 
 if (cluster.isMaster) {
 
     displayBanner(process.stdout);
-    var numCPUs = require("os").cpus().length;
-
-    for (var i = 0; i < numCPUs; i++) {
-        startWorker();
-    }
+    const numCPUs = require("os").cpus().length;
 
     cluster.on("exit", function (worker, code, signal) {
         process.stdout.write(`main: Worker ${worker.id} died with exit code ${code} (${signal})\n`);
         startWorker();
     });
+
+    for (let i = 0; i < numCPUs; i++) {
+        startWorker();
+    }
 
 } else {
     require("./shield")();
