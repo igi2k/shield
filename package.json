@@ -1,6 +1,6 @@
 {
   "name": "shield",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Authentication shield for web apps",
   "author": "Pavel Nejedly <pavel.nejedly@atlas.cz>",
   "repository": {
@@ -20,7 +20,7 @@
     "request": "~2.81.0"
   },
   "devDependencies": {
-    "eslint": "~4.0.0",
+    "eslint": "~4.2.0",
     "mocha": "~3.4.2"
   },
   "scripts": {

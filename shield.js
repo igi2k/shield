@@ -150,7 +150,10 @@ function startServer() {
 if(require.main === module){
     // generate password hash
     if(process.argv[2] == "hash"){
-        return AuthService.generateAuthHash({pass: process.argv[3]}, config.keys.password)
+        return AuthService.generateAuthHash({
+            name: process.argv[3],
+            pass: process.argv[4]
+        }, config.keys.password)
         .catch((err) => {
             return `ERROR: ${err.message}`;
         })
