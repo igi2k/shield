@@ -83,67 +83,76 @@ function createShield(app){
 
 function bootstrap(logger, env) {
 
-    var server = require("./lib/shield-start").create({
+    return require("./lib/shield-start").create({
         rootDir: path.join(__dirname, "root"),
         tls: config.tls
-    }, app);
-    app.server = server;
+    }, app).then( server => {
+        app.server = server;
 
-    app.use(morgan(logger.format, logger.options));
-    
-    app.route("/").all(shieldAuth[0]);
-    app.route("/").get(function(req, res){
-        res.status(200).render("index", { title: "Mapping", apps: config.apps });
-    });
-
-    config.apps.forEach(createShield, app);
-
-    /**
-     * Not found handler
-     */
-    app.use(function(req, res){
-        res.status(404).render("404", { title: "404" });
-    });
-
-    /**
-     * Error handler
-     */
-    if (env == "development") {
-        app.use(function errorHandler(err, req, res, next) { //eslint-disable-line
-            var stack = (err.stack || "").split("\n").slice(1);
-            var message = err.message || err;
-            logger.error(err.stack || err);
-            res.status(500).render("500", { title: "500", err: {
-                message: message,
-                stack: stack
-            }});
+        app.use(morgan(logger.format, logger.options));
+        
+        app.route("/").all(shieldAuth[0]);
+        app.route("/").get(function(req, res){
+            res.status(200).render("index", { title: "Mapping", apps: config.apps });
         });
-    } else {
-        app.use(function errorHandler(err, req, res, next) { //eslint-disable-line
-            logger.error(err.stack || err);
-            res.status(500).render("500", { title: "500", err: {
-                message: "Check server logs.",
-            }});
-        });
-        app.disable("x-powered-by");
-    }
 
-    return server;
+        config.apps.forEach(createShield, app);
+
+        /**
+         * Not found handler
+         */
+        app.use(function(req, res){
+            res.status(404).render("404", { title: "404" });
+        });
+
+        /**
+         * Error handler
+         */
+        if (env == "development") {
+            app.use(function errorHandler(err, req, res, next) { //eslint-disable-line
+                var stack = (err.stack || "").split("\n").slice(1);
+                var message = err.message || err;
+                logger.error(err.stack || err);
+                res.status(500).render("500", { title: "500", err: {
+                    message: message,
+                    stack: stack
+                }});
+            });
+        } else {
+            app.use(function errorHandler(err, req, res, next) { //eslint-disable-line
+                logger.error(err.stack || err);
+                res.status(500).render("500", { title: "500", err: {
+                    message: "Check server logs.",
+                }});
+            });
+            app.disable("x-powered-by");
+        }
+
+        return server;
+    });
 }
 
 /**
  * run server
  */
-function startServer() {
+function startServer(passphrase) {
 
-    var env = app.get("env");
-    var logger = app.locals.logger = require("./lib/shield-logger");
+    const env = app.get("env");
+    const logger = app.locals.logger = require("./lib/shield-logger");
 
-    bootstrap(logger, env).on("error", function(err){
-        logger.error(err);
-    })
-    .listen(config.port || 8080, config.hostname, function() {
-        logger.log("[%s] listening on port %d (%s)", env, this.address().port, this.type);
+    if(passphrase != null && config.tls) {
+        config.tls["passphrase"] = passphrase;
+    }
+
+    return bootstrap(logger, env).then(server => {
+        server.on("error", function(err){
+            logger.error(err);
+        })
+        .listen(config.port || 8080, config.hostname, function() {
+            logger.log("[%s] listening on port %d (%s)", env, this.address().port, this.type);
+        });
+    }).catch(error => {
+        logger.error(error);
     });
 }
 
@@ -159,7 +168,14 @@ if(require.main === module){
         })
         .then(console.log); //eslint-disable-line
     }
-    startServer();
+    require("keytar").getPassword("shield", "tls-passphrase")
+    .then((key) => {
+        return startServer(key);
+    })
+    .catch(error => {
+        const logger = require("./lib/shield-logger");
+        logger.error("keychain:", error);
+    });
 } else {
     module.exports = startServer;
 }

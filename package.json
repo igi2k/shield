@@ -1,6 +1,6 @@
 {
   "name": "shield",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Authentication shield for web apps",
   "author": "Pavel Nejedly <pavel.nejedly@atlas.cz>",
   "repository": {
@@ -16,6 +16,7 @@
     "express": "~4.15.3",
     "gaikan": "~2.0.2",
     "jsonwebtoken": "~7.4.1",
+    "keytar": "~4.0.3",
     "morgan": "~1.8.2",
     "request": "~2.81.0"
   },
