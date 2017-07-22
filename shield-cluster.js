@@ -8,6 +8,7 @@ const color = require("./lib/util/color");
 const path = require("path");
 const fs = require("fs");
 const stm = require("./lib/stm");
+const queue = require("./lib/stm-queue");
 
 function startWorker() {
     const worker = cluster.fork();
@@ -36,6 +37,7 @@ if (cluster.isMaster) {
 
     cluster.on("exit", function (worker, code, signal) {
         process.stdout.write(`main: Worker ${worker.id} died with exit code ${code} (${signal})\n`);
+        queue.clean(worker.id);
         startWorker();
     });
 

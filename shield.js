@@ -174,7 +174,7 @@ function keychain(logger) {
         .then((passphrase) => {
             return stm.get(key, {}).then((entry) => {
                 entry.value = passphrase;
-                return stm.set(key, entry, { notify: true }).then((entry) => {
+                return stm.set(key, entry).then((entry) => {
                     return entry.value;
                 });
             });
