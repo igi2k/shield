@@ -42,9 +42,11 @@ htmlEngine.set["hasRole"] = function (auth, role) {
 app.keys = config.keys;
 app.locals.users = config.users;
 // exposed api
+const stmApi = require("./lib/stm");
+const queueApi = require("./lib/stm-queue");
 app.locals.api = {
-    stm: require("./lib/stm"),
-    queue: require("./lib/stm-queue")
+    stm: stmApi,
+    queue: queueApi
 };
 // logging
 const ipLookup = config["ip-lookup"] || {};
@@ -159,26 +161,62 @@ function bootstrap(logger, env) {
     });
 }
 
+function keychain(logger) {
+    const queue = queueApi.region("queue");
+    const stm = stmApi.region("shield");
+    const key = "keychain";
+
+    function getItemFromKechain() {
+        return require("keytar").getPassword("shield", "tls-passphrase")
+        .catch((error) => {
+            logger.error(`keychain: ${error.message}`);
+        })
+        .then((passphrase) => {
+            return stm.get(key, {}).then((entry) => {
+                entry.value = passphrase;
+                return stm.set(key, entry, { notify: true }).then((entry) => {
+                    return entry.value;
+                });
+            });
+        });
+    }
+
+    function lockedBlock() {
+        return stm.get(key).then((entry) => {
+            if (entry) {
+                return entry.value;
+            }
+            return getItemFromKechain();
+        });
+    }
+
+    return queue.async(key, lockedBlock);
+}
+
+
+
 /**
  * run server
  */
-function startServer(passphrase) {
+function startServer() {
 
     const env = app.get("env");
     const logger = app.locals.logger = require("./lib/shield-logger");
 
-    if (passphrase != null && config.tls) {
-        config.tls["passphrase"] = passphrase;
-    }
-
-    return bootstrap(logger, env).then(server => {
-        server.on("error", function (err) {
-            logger.error(err);
-        })
-        .listen(config.port || 8080, config.hostname, function () {
-            logger.log("[%s] listening on port %d (%s)", env, this.address().port, this.type);
+    return keychain(logger).then((passphrase) => {
+        if (passphrase != null && config.tls) {
+            config.tls["passphrase"] = passphrase;
+        }
+        return bootstrap(logger, env).then((server) => {
+            server.on("error", function (err) {
+                logger.error(err);
+            })
+            .listen(config.port || 8080, config.hostname, function () {
+                logger.log("[%s] listening on port %d (%s)", env, this.address().port, this.type);
+            });
         });
-    }).catch((error) => {
+    })
+    .catch((error) => {
         logger.error(error);
     });
 }
@@ -195,14 +233,7 @@ if (require.main === module) {
         })
         .then(console.log); //eslint-disable-line
     }
-    require("keytar").getPassword("shield", "tls-passphrase")
-    .then((key) => {
-        return startServer(key);
-    })
-    .catch((error) => {
-        const logger = require("./lib/shield-logger");
-        logger.error("keychain:", error);
-    });
+    startServer();
 } else {
     module.exports = startServer;
 }

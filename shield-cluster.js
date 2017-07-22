@@ -9,8 +9,8 @@ const path = require("path");
 const fs = require("fs");
 const stm = require("./lib/stm");
 
-function startWorker(key) {
-    const worker = cluster.fork(key != null && { passphrase: key });
+function startWorker() {
+    const worker = cluster.fork();
     const prefix = worker.id + ": ";
 
     worker.on("message", (message) => { // serialize console logs
@@ -34,20 +34,14 @@ if (cluster.isMaster) {
     displayBanner(process.stdout);
     const numCPUs = require("os").cpus().length;
 
-    require("keytar").getPassword("shield", "tls-passphrase")
-    .then((key) => {
-        cluster.on("exit", function (worker, code, signal) {
-            process.stdout.write(`main: Worker ${worker.id} died with exit code ${code} (${signal})\n`);
-            startWorker(key);
-        });
-
-        for (let i = 0; i < numCPUs; i++) {
-            startWorker(key);
-        }
-    })
-    .catch((error) => {
-        process.stdout.write(`keychain: ${error.message}\n`);
+    cluster.on("exit", function (worker, code, signal) {
+        process.stdout.write(`main: Worker ${worker.id} died with exit code ${code} (${signal})\n`);
+        startWorker();
     });
+
+    for (let i = 0; i < numCPUs; i++) {
+        startWorker();
+    }
 } else {
-    require("./shield")(process.env.passphrase);
+    require("./shield")();
 }
