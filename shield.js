@@ -8,7 +8,7 @@ const morgan = require("morgan");
 // templating engine
 const htmlEngine = require("gaikan");
 
-var app = express();
+const app = express();
 
 /**
  * express configuration
@@ -21,13 +21,16 @@ app.engine("html", htmlEngine);
 
 app.use("/static", express.static(path.join(__dirname, "static")));
 
-var config = loadConfig();
+const config = loadConfig();
 
-var ShieldProxy = require("./lib/shield-proxy");
-var ShieldAccess = require("./lib/shield-access");
-var AuthService = require("./lib/auth-service");
-var authService = AuthService(app);
-var shieldAuth = [require("./lib/check-auth")(authService), require("./lib/auth/basic-auth")(authService)];
+const ShieldProxy = require("./lib/shield-proxy");
+const ShieldAccess = require("./lib/shield-access");
+const AuthService = require("./lib/auth-service");
+const authService = AuthService(app);
+const shieldAuth = [
+    require("./lib/check-auth")(authService, setHtmlBaseUrl),
+    require("./lib/auth/basic-auth")(authService)
+];
 
 // setup html engine helpers
 // TODO: make single param function
@@ -45,39 +48,60 @@ app.locals.api = {
 };
 // logging
 const ipLookup = config["ip-lookup"] || {};
-morgan.token("remote-addr-lookup", function(req){
-    var ip = this["remote-addr"](req);
+morgan.token("remote-addr-lookup", function (req) {
+    const ip = this["remote-addr"](req);
     return ipLookup[ip] || ip;
 });
+// html base
+function setHtmlBaseUrl(req, res) {
+    res.locals.baseUrl = `${req.baseUrl}/`;
+}
 
-function loadConfig(){
-    var fileName = path.join(__dirname, "root", "config.json");
+function loadConfig() {
+    const fileName = path.join(__dirname, "root", "config.json");
     return require(fileName);
 }
 
-function createShield(app){
-    var shieldMapping = express.Router();
+function createShield(app) {
+    const shieldMapping = express.Router();
     // shield authentication
     shieldMapping.route("*").all(shieldAuth);
     // shield access controll
-    if(app.hasOwnProperty("access")){
+    if (app.hasOwnProperty("access")) {
         shieldMapping.route("*").all(ShieldAccess(app.access));
     }
-    if(app.hasOwnProperty("url")) {
+    if (app.hasOwnProperty("url")) {
         // shield proxy
         shieldMapping.route("*").all(ShieldProxy(app.url));
     }
+
+    function getPaths(app) {
+        return [app.path, app.alias]
+        .filter((path) => path !== undefined)
+        .map((path) => {
+            return path.startsWith("/") ? path : `/${path}`;
+        });
+    }
+
+    const paths = getPaths(app);
+
     // link
-    this.use(app.path, shieldMapping);
+    paths.forEach((path) => {
+        this.use(path, shieldMapping);
+    });
+
     // add associated app module
-    if(app.hasOwnProperty("module")) {
-        var moduleName = (app.development ? "./apps/" : "") + app.module;
+    if (app.hasOwnProperty("module")) {
+        const moduleName = (app.development ? "./apps/" : "") + app.module;
         // we need to link it this way to get mount event
-        var handler = require(moduleName);
-        if(typeof handler.disable == "function") {
+        const handler = require(moduleName);
+        if (typeof handler.disable == "function") {
             handler.disable("x-powered-by");
         }
-        this.use(app.path, handler);
+        // link
+        paths.forEach((path) => {
+            this.use(path, handler);
+        });
     }
 }
 
@@ -86,13 +110,13 @@ function bootstrap(logger, env) {
     return require("./lib/shield-start").create({
         rootDir: path.join(__dirname, "root"),
         tls: config.tls
-    }, app).then( server => {
+    }, app).then((server) => {
         app.server = server;
 
         app.use(morgan(logger.format, logger.options));
-        
+
         app.route("/").all(shieldAuth[0]);
-        app.route("/").get(function(req, res){
+        app.route("/").get(function (req, res) {
             res.status(200).render("index", { title: "Mapping", apps: config.apps });
         });
 
@@ -101,7 +125,8 @@ function bootstrap(logger, env) {
         /**
          * Not found handler
          */
-        app.use(function(req, res){
+        app.use(function (req, res) {
+            setHtmlBaseUrl(req, res);
             res.status(404).render("404", { title: "404" });
         });
 
@@ -110,6 +135,7 @@ function bootstrap(logger, env) {
          */
         if (env == "development") {
             app.use(function errorHandler(err, req, res, next) { //eslint-disable-line
+                setHtmlBaseUrl(req, res);
                 var stack = (err.stack || "").split("\n").slice(1);
                 var message = err.message || err;
                 logger.error(err.stack || err);
@@ -120,6 +146,7 @@ function bootstrap(logger, env) {
             });
         } else {
             app.use(function errorHandler(err, req, res, next) { //eslint-disable-line
+                setHtmlBaseUrl(req, res);
                 logger.error(err.stack || err);
                 res.status(500).render("500", { title: "500", err: {
                     message: "Check server logs.",
@@ -140,25 +167,25 @@ function startServer(passphrase) {
     const env = app.get("env");
     const logger = app.locals.logger = require("./lib/shield-logger");
 
-    if(passphrase != null && config.tls) {
+    if (passphrase != null && config.tls) {
         config.tls["passphrase"] = passphrase;
     }
 
     return bootstrap(logger, env).then(server => {
-        server.on("error", function(err){
+        server.on("error", function (err) {
             logger.error(err);
         })
-        .listen(config.port || 8080, config.hostname, function() {
+        .listen(config.port || 8080, config.hostname, function () {
             logger.log("[%s] listening on port %d (%s)", env, this.address().port, this.type);
         });
-    }).catch(error => {
+    }).catch((error) => {
         logger.error(error);
     });
 }
 
-if(require.main === module){
+if (require.main === module) {
     // generate password hash
-    if(process.argv[2] == "hash"){
+    if (process.argv[2] == "hash") {
         return AuthService.generateAuthHash({
             name: process.argv[3],
             pass: process.argv[4]
@@ -172,7 +199,7 @@ if(require.main === module){
     .then((key) => {
         return startServer(key);
     })
-    .catch(error => {
+    .catch((error) => {
         const logger = require("./lib/shield-logger");
         logger.error("keychain:", error);
     });
