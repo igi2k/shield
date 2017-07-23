@@ -1,6 +1,6 @@
 {
   "name": "shield",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Authentication shield for web apps",
   "author": "Pavel Nejedly <pavel.nejedly@atlas.cz>",
   "repository": {
@@ -21,7 +21,7 @@
     "request": "~2.81.0"
   },
   "devDependencies": {
-    "eslint": "~4.2.0",
+    "eslint": "~4.3.0",
     "mocha": "~3.4.2"
   },
   "scripts": {
@@ -29,5 +29,5 @@
     "start": "node shield-cluster",
     "get:hash": "node shield.js hash"
   },
-  "engines" : { "node" : ">= 6.10" }
+  "engines" : { "node" : ">= 6.11" }
 }

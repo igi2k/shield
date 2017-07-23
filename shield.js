@@ -29,7 +29,7 @@ const AuthService = require("./lib/auth-service");
 const authService = AuthService(app);
 const shieldAuth = [
     require("./lib/check-auth")(authService, setHtmlBaseUrl),
-    require("./lib/auth/basic-auth")(authService)
+    require("./lib/auth/basic-auth")(authService, setHtmlBaseUrl)
 ];
 
 // setup html engine helpers
@@ -56,7 +56,9 @@ morgan.token("remote-addr-lookup", function (req) {
 });
 // html base
 function setHtmlBaseUrl(req, res) {
-    res.locals.baseUrl = `${req.baseUrl}/`;
+    const auth = res.locals.auth;
+    const baseUrlPrefix = auth ? auth.baseUrl : "";
+    res.locals.baseUrl = `${baseUrlPrefix}${req.baseUrl}/`;
 }
 
 function loadConfig() {
@@ -70,7 +72,7 @@ function createShield(app) {
     shieldMapping.route("*").all(shieldAuth);
     // shield access controll
     if (app.hasOwnProperty("access")) {
-        shieldMapping.route("*").all(ShieldAccess(app.access));
+        shieldMapping.route("*").all(ShieldAccess(app.access, setHtmlBaseUrl));
     }
     if (app.hasOwnProperty("url")) {
         // shield proxy
@@ -117,7 +119,8 @@ function bootstrap(logger, env) {
 
         app.use(morgan(logger.format, logger.options));
 
-        app.route("/").all(shieldAuth[0]);
+        const checkAuth = shieldAuth[0];
+        app.route("/").all(checkAuth);
         app.route("/").get(function (req, res) {
             res.status(200).render("index", { title: "Mapping", apps: config.apps });
         });
@@ -128,8 +131,9 @@ function bootstrap(logger, env) {
          * Not found handler
          */
         app.use(function (req, res) {
-            setHtmlBaseUrl(req, res);
-            res.status(404).render("404", { title: "404" });
+            checkAuth(req, res, () => {
+                res.status(404).render("404", { title: "404" });
+            });
         });
 
         /**
@@ -137,22 +141,24 @@ function bootstrap(logger, env) {
          */
         if (env == "development") {
             app.use(function errorHandler(err, req, res, next) { //eslint-disable-line
-                setHtmlBaseUrl(req, res);
-                var stack = (err.stack || "").split("\n").slice(1);
-                var message = err.message || err;
+                const stack = (err.stack || "").split("\n").slice(1);
+                const message = err.message || err;
                 logger.error(err.stack || err);
-                res.status(500).render("500", { title: "500", err: {
-                    message: message,
-                    stack: stack
-                }});
+                checkAuth(req, res, () => {
+                    res.status(500).render("500", { title: "500", err: {
+                        message: message,
+                        stack: stack
+                    }});
+                });
             });
         } else {
             app.use(function errorHandler(err, req, res, next) { //eslint-disable-line
-                setHtmlBaseUrl(req, res);
                 logger.error(err.stack || err);
-                res.status(500).render("500", { title: "500", err: {
-                    message: "Check server logs.",
-                }});
+                checkAuth(req, res, () => {
+                    res.status(500).render("500", { title: "500", err: {
+                        message: "Check server logs.",
+                    }});
+                });
             });
             app.disable("x-powered-by");
         }
@@ -194,7 +200,6 @@ function keychain(logger) {
 }
 
 
-
 /**
  * run server
  */
@@ -214,6 +219,14 @@ function startServer() {
             .listen(config.port || 8080, config.hostname, function () {
                 logger.log("[%s] listening on port %d (%s)", env, this.address().port, this.type);
             });
+        })
+        .then(() => {
+            if (config.sso) {
+                const sso = Object.assign({}, config.sso, { certs: config.tls });
+                return require("./lib/auth/simple-sso")(sso, logger).then((key) => {
+                    app.sso = { key };
+                });
+            }
         });
     })
     .catch((error) => {
