@@ -29,5 +29,5 @@
     "start": "node shield-cluster",
     "get:hash": "node shield.js hash"
   },
-  "engines" : { "node" : ">= 6.11" }
+  "engines" : { "node" : "~6.11.1" }
 }
