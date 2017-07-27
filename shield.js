@@ -110,13 +110,13 @@ function createShield(app) {
 }
 
 function bootstrap(logger, env) {
-
+    const rootDir = path.join(__dirname, "root");
     return require("./lib/shield-start").create({
-        rootDir: path.join(__dirname, "root"),
+        rootDir: rootDir,
         tls: config.tls
     }, app).then((server) => {
         app.server = server;
-
+        app.rootDir = rootDir;
         app.use(morgan(logger.format, logger.options));
 
         const checkAuth = shieldAuth[0];
@@ -222,7 +222,7 @@ function startServer() {
         })
         .then(() => {
             if (config.sso) {
-                const sso = Object.assign({}, config.sso, { certs: config.tls });
+                const sso = Object.assign({ rootDir: app.rootDir }, config.sso, { certs: config.tls });
                 return require("./lib/auth/simple-sso")(sso, logger).then((key) => {
                     app.sso = { key };
                 });
