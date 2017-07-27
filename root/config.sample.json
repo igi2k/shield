@@ -13,7 +13,6 @@
         }
     },
     "keys": {
-        "cookie": "key1",
         "password": "key2"
     },
     "tls": {

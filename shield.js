@@ -7,6 +7,8 @@ const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
 // templating engine
 const htmlEngine = require("gaikan");
+// core utils
+const core = require("./lib/util/core");
 
 const app = express();
 
@@ -42,11 +44,9 @@ htmlEngine.set["hasRole"] = function (auth, role) {
 app.keys = config.keys;
 app.locals.users = config.users;
 // exposed api
-const stmApi = require("./lib/stm");
-const queueApi = require("./lib/stm-queue");
 app.locals.api = {
-    stm: stmApi,
-    queue: queueApi
+    stm: require("./lib/stm"),
+    queue: require("./lib/stm-queue")
 };
 // logging
 const ipLookup = config["ip-lookup"] || {};
@@ -162,43 +162,25 @@ function bootstrap(logger, env) {
             });
             app.disable("x-powered-by");
         }
-
-        return server;
+        // generate cookie key
+        return core.executeSync("cookie", () => {
+            return core.generateKey();
+        })
+        .then((key) => {
+            app.keys.cookie = key;
+            return server;
+        });
     });
 }
 
 function keychain(logger) {
-    const queue = queueApi.region("queue");
-    const stm = stmApi.region("shield");
-    const key = "keychain";
-
-    function getItemFromKechain() {
+    return core.executeSync("keychain", () => {
         return require("keytar").getPassword("shield", "tls-passphrase")
         .catch((error) => {
             logger.error(`keychain: ${error.message}`);
-        })
-        .then((passphrase) => {
-            return stm.get(key, {}).then((entry) => {
-                entry.value = passphrase;
-                return stm.set(key, entry).then((entry) => {
-                    return entry.value;
-                });
-            });
         });
-    }
-
-    function lockedBlock() {
-        return stm.get(key).then((entry) => {
-            if (entry) {
-                return entry.value;
-            }
-            return getItemFromKechain();
-        });
-    }
-
-    return queue.async(key, lockedBlock);
+    });
 }
-
 
 /**
  * run server
