@@ -164,7 +164,10 @@ function bootstrap(logger, env) {
         }
         // generate cookie key
         return core.executeSync("cookie", () => {
-            return core.generateKey();
+            // for HMAC-SHA256 
+            // this key should not exceeded 512bits ([64])
+            // maximum lenght should incorporate 32bit space for random value ([4])
+            return core.generateKey(48);
         })
         .then((key) => {
             app.keys.cookie = key;
