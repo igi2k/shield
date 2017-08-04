@@ -23,6 +23,13 @@ app.engine("html", htmlEngine);
 
 app.use("/static", express.static(path.join(__dirname, "static")));
 
+class ShieldError {
+    constructor(template, locals) {
+        this.template = template;
+        this.locals = locals;
+    }
+}
+
 const config = loadConfig();
 
 const ShieldProxy = require("./lib/shield-proxy");
@@ -31,7 +38,7 @@ const AuthService = require("./lib/auth-service");
 const authService = AuthService(app);
 const shieldAuth = [
     require("./lib/check-auth")(authService, setHtmlBaseUrl),
-    require("./lib/auth/basic-auth")(authService, setHtmlBaseUrl)
+    require("./lib/auth/basic-auth")(authService, ShieldError)
 ];
 
 // setup html engine helpers
@@ -72,7 +79,7 @@ function createShield(app) {
     shieldMapping.route("*").all(shieldAuth);
     // shield access controll
     if (app.hasOwnProperty("access")) {
-        shieldMapping.route("*").all(ShieldAccess(app.access, setHtmlBaseUrl));
+        shieldMapping.route("*").all(ShieldAccess(app.access, ShieldError));
     }
     if (app.hasOwnProperty("url")) {
         // shield proxy
@@ -136,38 +143,66 @@ function bootstrap(logger, env) {
             });
         });
 
+        function handleShieldError(err, res) {
+            if (err.constructor === ShieldError) {
+                res.render(err.template, err.locals);
+                return true;
+            }
+            return false;
+        }
+
         /**
          * Error handler
          */
         if (env == "development") {
-            app.use(function errorHandler(err, req, res, next) { //eslint-disable-line
-                const stack = (err.stack || "").split("\n").slice(1);
-                const message = err.message || err;
-                logger.error(err.stack || err);
-                checkAuth(req, res, () => {
+            app.use(function errorHandler(err, req, res, next) {
+                function sendError(err) {
+                    logger.error(err.stack || err);
+                    if (res.headersSent) {
+                        return next(); // default handler
+                    }
+                    const stack = (err.stack || "").split("\n").slice(1);
+                    const message = err.message || err;
                     res.status(500).render("500", { title: "500", err: {
                         message: message,
                         stack: stack
                     }});
-                });
+                }
+                checkAuth(req, res, () => {
+                    if (handleShieldError(err, res)) {
+                        return;
+                    }
+                    sendError(err);
+                }).catch(sendError);
             });
         } else {
-            app.use(function errorHandler(err, req, res, next) { //eslint-disable-line
-                logger.error(err.stack || err);
-                checkAuth(req, res, () => {
+            app.use(function errorHandler(err, req, res, next) {
+                function sendError(err) {
+                    logger.error(err.stack || err);
+                    if (res.headersSent) {
+                        return next(); // default handler
+                    }                
                     res.status(500).render("500", { title: "500", err: {
                         message: "Check server logs.",
                     }});
-                });
+                }
+                checkAuth(req, res, () => {
+                    if (handleShieldError(err, res)) {
+                        return;
+                    }
+                    sendError(err);
+                }).catch(sendError);
             });
             app.disable("x-powered-by");
         }
+        const cookieKey = app.keys.cookie;
         // generate cookie key
         return core.executeSync("cookie", () => {
             // for HMAC-SHA256 
             // this key should not exceeded 512bits ([64])
             // maximum lenght should incorporate 32bit space for random value ([4])
-            return core.generateKey(48);
+            // predefined cookie key from config has precedence
+            return cookieKey || core.generateKey(48);
         })
         .then((key) => {
             app.keys.cookie = key;
