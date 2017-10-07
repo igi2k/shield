@@ -9,10 +9,11 @@ const path = require("path");
 const fs = require("fs");
 const stm = require("./lib/stm");
 const queue = require("./lib/stm-queue");
+const { version } = require(path.join(__dirname, "package.json"));
 
 function startWorker() {
     const worker = cluster.fork();
-    const prefix = worker.id + ": ";
+    const prefix = `${worker.id}: `;
 
     worker.on("message", (message) => { // serialize console logs
         if (message.type == "log") {
@@ -26,7 +27,19 @@ function startWorker() {
 }
 
 function displayBanner(out) {
-    const banner = fs.readFileSync(path.resolve(__dirname, "root", "banner")).toString();
+    function charConvert(input) {
+        let base = 0x2070;
+        if(input === "2" || input === "3") {
+            base = 0x00B0;
+        } else if(input === ".") {
+            return "\u00B7";
+        }
+        return String.fromCharCode(base + parseInt(input));
+    }
+    const banner = fs.readFileSync(path.resolve(__dirname, "root", "banner"))
+    .toString()
+    .replace("${version}", version.replace(/[0-9.]/g, charConvert));
+    
     out.write(`${color.yellow.bold}${banner}${color.reset}\n`);
 }
 

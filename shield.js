@@ -106,9 +106,18 @@ function createShield(app) {
         const moduleName = (app.development ? "./apps/" : "") + app.module;
         // we need to link it this way to get mount event
         const handler = require(moduleName);
-        if (typeof handler.disable == "function") {
+        if (typeof handler.disable === "function") {
             handler.disable("x-powered-by");
         }
+        // add custom module config
+        if(typeof handler.locals === "object") {
+            handler.locals = Object.assign(handler.locals, {
+                api: this.locals.api,
+                config: app.config
+            });
+        }
+        // add logger
+        handler.logger = this.logger;
         // link
         paths.forEach((path) => {
             this.use(path, handler);
@@ -226,15 +235,15 @@ function keychain(logger) {
 function startServer() {
 
     const env = app.get("env");
-    const logger = app.locals.logger = require("./lib/shield-logger");
+    const logger = app.logger = require("./lib/shield-logger");
 
     return keychain(logger).then((passphrase) => {
         if (passphrase != null && config.tls) {
             config.tls["passphrase"] = passphrase;
         }
         return bootstrap(logger, env).then((server) => {
-            server.on("error", function (err) {
-                logger.error(err);
+            server.on("error", (error) => {
+                logger.error(error);
             })
             .listen(config.port || 8080, config.hostname, function () {
                 logger.log("[%s] listening on port %d (%s)", env, this.address().port, this.type);
@@ -261,8 +270,8 @@ if (require.main === module) {
             name: process.argv[3],
             pass: process.argv[4]
         }, config.keys.password)
-        .catch((err) => {
-            return `ERROR: ${err.message}`;
+        .catch((error) => {
+            return `ERROR: ${error.message}`;
         })
         .then(console.log); //eslint-disable-line
     }
