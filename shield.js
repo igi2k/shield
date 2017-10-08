@@ -41,12 +41,6 @@ const shieldAuth = [
     require("./lib/auth/basic-auth")(authService, ShieldError)
 ];
 
-// setup html engine helpers
-// TODO: make single param function
-htmlEngine.set["hasRole"] = function (auth, role) {
-    return role == undefined || auth && auth.hasRole(role);
-};
-
 // setup access
 app.keys = config.keys;
 app.locals.users = config.users;
@@ -138,7 +132,14 @@ function bootstrap(logger, env) {
         const checkAuth = shieldAuth[0];
         app.route("/").all(checkAuth);
         app.route("/").get(function (req, res) {
-            res.status(200).render("index", { title: "Mapping", apps: config.apps });
+            const auth = res.locals.auth;
+            res.status(200).render("index", { 
+                title: "Mapping", 
+                apps: config.apps,
+                show: (app) => {
+                    return app.access == undefined || auth && auth.hasRole(app.access);
+                }
+            });
         });
 
         config.apps.forEach(createShield, app);
