@@ -1,6 +1,6 @@
 const assert = require("assert");
 
-describe.only("core", function () {
+describe("core", function () {
     const core = require("../lib/util/core");
     const key = "key";
     const name = "test";
@@ -10,54 +10,50 @@ describe.only("core", function () {
     describe("promisify", function () {
         const value = 3;
 
-        it("should handle value", function (done) {
-            function testOk(value, callback) {
-                callback(null, value);
-            }
-            core.promisify(testOk)(value).then((result) => {
+        function testOk(value, callback) {
+            callback(null, value);
+        }
+        function testError(value, callback) {
+            callback(new Error(value));
+        }
+
+        it("should handle value", function () {
+            return core.promisify(testOk)(value).then((result) => {
                 assert.equal(value, result);
-                done();
-            }).catch(done);
+            });
         });
-        it("should handle error", function (done) {
-            function testError(value, callback) {
-                callback(new Error(value));
-            }
-            core.promisify(testError)(value).then(done).catch((error) => {
+        it("should handle error", function () {
+            return core.promisify(testError)(value).then(() => { throw new Error("No Error"); }).catch((error) => {
                 assert.equal(value, error.message);
-                done();
-            }).catch(done);
+            });
         });
     });
 
     describe("encrypt", function () {
-        it("should encrypt", function (done) {
-            core.encrypt(dataResult, key, name).then((result) => {
+        it("should encrypt", function () {
+            return core.encrypt(dataResult, key, name).then((result) => {
                 assert.equal(dataResultEncrypted, result);
-                done();
-            }).catch(done);
+            });
         });
     });
 
     describe("decrypt", function () {
-        it("should decrypt", function (done) {
-            core.decrypt(dataResultEncrypted, key, name).then((result) => {
+        it("should decrypt", function () {
+            return core.decrypt(dataResultEncrypted, key, name).then((result) => {
                 assert.equal(dataResult, result);
-                done();
-            }).catch(done);
+            });
         });
     });
 
     describe("generateKey", function () {
         const keySize = 10;
 
-        it("should generate key", function (done) {
-            core.generateKey(keySize).then((result) => {
+        it("should generate key", function () {
+            return core.generateKey(keySize).then((result) => {
                 const data = Buffer.from(result, "hex");
                 assert.equal(keySize, data.length);
                 //TODO: check uniformity
-                done();
-            }).catch(done);
+            });
         });
     });
 
@@ -77,11 +73,10 @@ describe.only("core", function () {
         function valueCallback() {
             return Promise.resolve(value);
         }
-        it("should execute standalone", function (done) {
-            core.executeSync(key, valueCallback).then((result) => {
+        it("should execute standalone", function () {
+            return core.executeSync(key, valueCallback).then((result) => {
                 assert.equal(value, result);
-                done();
-            }).catch(done);
+            });
         });
     });
 });
