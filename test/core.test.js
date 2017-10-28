@@ -2,6 +2,7 @@ const assert = require("assert");
 
 describe("core", function () {
     const core = require("../lib/util/core");
+
     const key = "key";
     const name = "test";
     const dataResult = "TEST";
@@ -30,30 +31,27 @@ describe("core", function () {
     });
 
     describe("encrypt", function () {
-        it("should encrypt", function () {
-            return core.encrypt(dataResult, key, name).then((result) => {
-                assert.equal(dataResultEncrypted, result);
-            });
+        it("should encrypt", async function () {
+            const result = await core.encrypt(dataResult, key, name);
+            assert.equal(dataResultEncrypted, result);
         });
     });
 
     describe("decrypt", function () {
-        it("should decrypt", function () {
-            return core.decrypt(dataResultEncrypted, key, name).then((result) => {
-                assert.equal(dataResult, result);
-            });
+        it("should decrypt", async function () {
+            const result = await core.decrypt(dataResultEncrypted, key, name);
+            assert.equal(dataResult, result);
         });
     });
 
     describe("generateKey", function () {
         const keySize = 10;
 
-        it("should generate key", function () {
-            return core.generateKey(keySize).then((result) => {
-                const data = Buffer.from(result, "hex");
-                assert.equal(keySize, data.length);
-                //TODO: check uniformity
-            });
+        it("should generate key", async function () {
+            const result = await core.generateKey(keySize);
+            const data = Buffer.from(result, "hex");
+            assert.equal(keySize, data.length);
+            //TODO: check uniformity
         });
     });
 
@@ -73,10 +71,9 @@ describe("core", function () {
         function valueCallback() {
             return Promise.resolve(value);
         }
-        it("should execute standalone", function () {
-            return core.executeSync(key, valueCallback).then((result) => {
-                assert.equal(value, result);
-            });
+        it("should execute standalone", async function () {
+            const result = await core.executeSync(key, valueCallback);
+            assert.equal(value, result);
         });
     });
 });
