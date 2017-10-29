@@ -50,9 +50,11 @@ app.locals.api = {
     queue: require("./lib/stm-queue")
 };
 // logging
+//TODO: configurable logging
 const ipLookup = config["ip-lookup"] || {};
-morgan.token("remote-addr-lookup", function (req) {
-    const ip = this["remote-addr"](req);
+morgan.token("remote-addr-lookup", function (req, res) {
+    const auth = res.locals.auth || {};
+    const ip = auth.isExternal ? auth.user : this["remote-addr"](req);
     return ipLookup[ip] || ip;
 });
 // html base
@@ -105,8 +107,15 @@ function createShield(app) {
         }
         // add custom module config
         if(typeof handler.locals === "object") {
+            const api = this.locals.api;
+            const moduleSTM = api.stm.region(moduleName);
+            const moduleQueue = api.queue.region(`${moduleName}-queue`);
             handler.locals = Object.assign(handler.locals, {
-                api: this.locals.api,
+                api: {
+                    stm: moduleSTM,
+                    queue: moduleQueue,
+                    executeSync: core.executeSyncUtil.bind(null, moduleQueue, moduleSTM)
+                },
                 config: app.config
             });
         }
