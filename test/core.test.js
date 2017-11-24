@@ -66,14 +66,16 @@ describe("core", function () {
     });
 
     describe("executeSync", function () {
-        const key = "test";
         const value = 10;
-        function valueCallback() {
-            return Promise.resolve(value);
-        }
-        it("should execute standalone", async function () {
-            const result = await core.executeSync(key, valueCallback);
+
+        it("should sync value (standalone)", async function () {
+            const result = await core.executeSync("test", () => value);
             assert.equal(value, result);
+        });
+
+        it("should sync object (standalone)", async function () {
+            const result = await core.executeSync("test-object", () => ({ test: value }));
+            assert.equal(value, result.test);
         });
     });
 });

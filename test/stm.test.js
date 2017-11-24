@@ -2,131 +2,130 @@
 describe("STM", function () {
 
     describe("standalone", function () {
-        var maxExecutions = 50;
-        var timeout = "10s";
+        const maxExecutions = 50;
+        const timeout = "10s";
 
-        it("should handle empty values", function (done) {
-            this.timeout(timeout);
-            require("./stm/worker-read")(0).then(function () {
-                done();
-            }, done);
-            
+        it("should handle empty values", () => {
+            return require("./stm/worker-read")(0);
         });
 
-        it(`should count to ${maxExecutions}`, function (done) {
-            this.timeout(timeout);
-            var report = reportFn(this);
-
-            require("./stm/worker")(0, maxExecutions).then(function (result) {
-                report([result], reportFormatter);
-                if ((result.entry.value == result.writes) && result.writes == maxExecutions) {
-                    done();
-                } else {
-                    done(new Error(JSON.stringify(result)));
-                }
-            }, done);
+        it("should execute in context", () => {
+            require("./stm/worker-execute")(0);
         });
 
-        it(`should count to ${maxExecutions} with fn`, function (done) {
-            this.timeout(timeout);
-            var report = reportFn(this);
+        function validate(result) {
+            if (!((result.entry.value == result.writes) && result.writes == maxExecutions)) {
+                throw new Error(JSON.stringify(result));
+            }
+        }
 
-            require("./stm/worker")(0, maxExecutions, true).then(function (result) {
+        it(`should count to ${maxExecutions}`, function () {
+            this.timeout(timeout);
+            const report = reportFn(this);
+
+            return require("./stm/worker")(0, maxExecutions).then((result) => {
                 report([result], reportFormatter);
-                if ((result.entry.value == result.writes) && result.writes == maxExecutions) {
-                    done();
-                } else {
-                    done(new Error(JSON.stringify(result)));
-                }
-            }, done);
+                validate(result);
+            });
+        });
+
+        it(`should count to ${maxExecutions} with fn`, function () {
+            this.timeout(timeout);
+            const report = reportFn(this);
+
+            return require("./stm/worker")(0, maxExecutions, true).then((result) => {
+                report([result], reportFormatter);
+                validate(result);
+            });
         });
     });
 
     describe("in cluster", function () {
-        var maxExecutions = 250;
-        var timeout = "5s";
+        const master = require("path").resolve(__dirname, "./cluster/master");
+        const maxExecutions = 250;
+        const timeout = "5s";
+        
+        function execute([workerPath, writes, useRetryFn], cwd) {
+            const childProcess = require("child_process");
+            return new Promise((resolve, reject) => {
+                let result;                
+                const child = childProcess.fork(master, [workerPath, writes, useRetryFn], { execArgv: [], cwd: cwd });
+                child.on("message", (data) => {
+                    result = data;
+                });
+                child.on("exit", (code) => {
+                    if (code === 0) {
+                        resolve(result);
+                    } else {
+                        reject(new Error(code));
+                    }
+                });
+            });
+        }
 
-        it("should handle empty values", function (done) {
+        function validate(result, maxExecutions) {
+            const max = result.reduce((out, result) => {
+                out.value = Math.max(result.entry.value, out.value);
+                out.writes += result.writes;
+                return out;
+            }, { value: 0, writes: 0 });
+
+            if (!((max.value == max.writes) && max.writes == maxExecutions)) {
+                throw new Error(JSON.stringify(result));
+            }
+        }
+
+        it("should handle empty values", function () {
             this.timeout(timeout);
 
-            var path = require("path").resolve(__dirname, "./cluster/master");
-            var child = require("child_process").fork(path, ["../stm/worker-read", maxExecutions, false], { execArgv: [] });
-            var result;
-            child.on("message", function (data) {
-                result = data;
-            });
-            child.on("exit", function (code) {
-                if (code === 0) {
-                    var isUndefined = result.reduce(function (out, result) {
-                        return (out && result == undefined);
-                    }, true);
-                    if(isUndefined) {
-                        done();
-                    } else {
-                        done(new Error(JSON.stringify(result)));
-                    }
-                } else {
-                    done(new Error(code));
+            return execute(["../stm/worker-read", maxExecutions, false])
+            .then((result) => {
+                const isUndefined = result.reduce((out, result) => {
+                    return (out && result == undefined);
+                }, true);
+
+                if(!isUndefined) {
+                    throw new Error(JSON.stringify(result));
                 }
             });
         });
 
-        it(`should count to ${maxExecutions}`, function (done) {
+        it("should execute in context", function () {
             this.timeout(timeout);
-            var report = reportFn(this);
 
-            var path = require("path").resolve(__dirname, "./cluster/master");
-            var child = require("child_process").fork(path, ["../stm/worker", maxExecutions, false], { execArgv: [] });
-            var result;
-            child.on("message", function (data) {
-                result = data;
-            });
-            child.on("exit", function (code) {
-                if (code === 0) {
-                    report(result, reportFormatter);
-                    var max = result.reduce(function (out, result) {
-                        out.value = Math.max(result.entry.value, out.value);
-                        out.writes += result.writes;
-                        return out;
-                    }, { value: 0, writes: 0 });
-                    if ((max.value == max.writes) && max.writes == maxExecutions) {
-                        done();
-                    } else {
-                        done(new Error(JSON.stringify(result)));
-                    }
-                } else {
-                    done(new Error(code));
+            return execute(["../stm/worker-execute", maxExecutions, false])
+            .then((result) => {
+                const count = result.reduce((out, result) => {
+                    return (out + result);
+                }, 0);
+
+                if(count != maxExecutions) {
+                    throw new Error(JSON.stringify(result));
                 }
             });
         });
 
-        it(`should count to ${maxExecutions} with fn`, function (done) {
+        it(`should count to ${maxExecutions}`, function () {
             this.timeout(timeout);
-            var report = reportFn(this);
+            const report = reportFn(this);
 
-            var path = require("path").resolve(__dirname, "./cluster/master");
-            var cwd = require("path").resolve(__dirname, "..");
-            var child = require("child_process").fork(path, ["../stm/worker", maxExecutions, true], { execArgv: [], cwd: cwd });
-            var result;
-            child.on("message", function (data) {
-                result = data;
+            return execute(["../stm/worker", maxExecutions, false])
+            .then((result) => {
+                report(result, reportFormatter);
+                validate(result, maxExecutions);
             });
-            child.on("exit", function (code) {
-                if (code === 0) {
-                    report(result, reportFormatter);
-                    var max = result.reduce(function (out, result) {
-                        out.value = Math.max(result.entry.value, out.value);
-                        out.writes += result.writes;
-                        return out;
-                    }, { value: 0, writes: 0 });
-                    if ((max.value == max.writes) && max.writes == maxExecutions) {
-                        done();
-                    } else {
-                        done(new Error(JSON.stringify(result)));
-                    }
-                } else {
-                    done(new Error(code));
-                }
+        });
+
+        it(`should count to ${maxExecutions} with fn`, function () {
+            this.timeout(timeout);
+            const report = reportFn(this);
+
+            const cwd = require("path").resolve(__dirname, "..");
+            
+            return execute(["../stm/worker", maxExecutions, true], cwd)
+            .then((result) => {
+                report(result, reportFormatter);
+                validate(result, maxExecutions);
             });
         });
     });
@@ -135,10 +134,10 @@ describe("STM", function () {
         return context.report || function () { };
     }
     function reportFormatter(data) {
-        var ordered = data.sort(function (a, b) {
+        var ordered = data.sort((a, b) => {
             return a.worker - b.worker;
         });
-        var output = ordered.map(function (result) {
+        var output = ordered.map((result) => {
             var overhead = (result.retries / result.writes) * 100;
             return `${result.writes}/${result.retries} (${overhead.toFixed(0)}%)`;
         });

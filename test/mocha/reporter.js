@@ -14,7 +14,11 @@ function ReporterEx(runner) {
     function reportHook(test) {
         test.ctx.report = function (data, formatter) {
             test.__report = function () {
-                return formatter.call(this, data);
+                try {
+                    return formatter.call(this, data);
+                } catch(error) {
+                    return error;
+                }
             };
         };
     }
