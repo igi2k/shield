@@ -2,48 +2,35 @@
 describe("STM Queue", function () {
 
     describe("standalone", function () {
-        var maxExecutions = 50;
-        var timeout = "10s";
+        const maxExecutions = 50;
+        const timeout = "10s";
 
-        it(`should execute ${maxExecutions} times`, function (done) {
+        it(`should execute ${maxExecutions} times`, function () {
             this.timeout(timeout);
 
-            require("./stm-queue/worker")(0, maxExecutions).then(function (result) {
-                if (result.executions == maxExecutions) {
-                    done();
-                } else {
-                    done(new Error(JSON.stringify(result)));
+            return require("./stm-queue/worker")(0, maxExecutions).then((result) => {
+                if (result.executions !== maxExecutions) {
+                    throw new Error(JSON.stringify(result));
                 }
-            }, done);
+            });
 
         });
     });
 
     describe("in cluster", function () {
-        var maxExecutions = 250;
-        var timeout = "5s";
+        const { execute } = require("./cluster/cluster-util");
+        const maxExecutions = 250;
+        const timeout = "5s";
 
-        it(`should execute ${maxExecutions} times`, function (done) {
+        it(`should execute ${maxExecutions} times`, function () {
             this.timeout(timeout);
 
-            var path = require("path").resolve(__dirname, "./cluster/master");
-            var child = require("child_process").fork(path, ["../stm-queue/worker", maxExecutions, false], { execArgv: [] });
-            var result;
-            child.on("message", function (data) {
-                result = data;
-            });
-            child.on("exit", function (code) {
-                if (code === 0) {
-                    var executions = result.reduce(function (out, result) {
-                        return out + result.executions;
-                    }, 0);
-                    if (executions == maxExecutions) {
-                        done();
-                    } else {
-                        done(new Error(JSON.stringify(result)));
-                    }
-                } else {
-                    done(new Error(code));
+            return execute(["../stm-queue/worker", maxExecutions, false]).then((result) => {
+                const executions = result.reduce((out, result) => {
+                    return out + result.executions;
+                }, 0);
+                if (executions !== maxExecutions) {
+                    throw new Error(JSON.stringify(result));
                 }
             });
         });

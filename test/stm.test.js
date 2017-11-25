@@ -9,8 +9,8 @@ describe("STM", function () {
             return require("./stm/worker-read")(0);
         });
 
-        it("should execute in context", () => {
-            require("./stm/worker-execute")(0);
+        it("should update in context", () => {
+            require("./stm/worker-update")(0);
         });
 
         function validate(result) {
@@ -41,28 +41,10 @@ describe("STM", function () {
     });
 
     describe("in cluster", function () {
-        const master = require("path").resolve(__dirname, "./cluster/master");
+        const { execute } = require("./cluster/cluster-util");
         const maxExecutions = 250;
         const timeout = "5s";
         
-        function execute([workerPath, writes, useRetryFn], cwd) {
-            const childProcess = require("child_process");
-            return new Promise((resolve, reject) => {
-                let result;                
-                const child = childProcess.fork(master, [workerPath, writes, useRetryFn], { execArgv: [], cwd: cwd });
-                child.on("message", (data) => {
-                    result = data;
-                });
-                child.on("exit", (code) => {
-                    if (code === 0) {
-                        resolve(result);
-                    } else {
-                        reject(new Error(code));
-                    }
-                });
-            });
-        }
-
         function validate(result, maxExecutions) {
             const max = result.reduce((out, result) => {
                 out.value = Math.max(result.entry.value, out.value);
@@ -90,10 +72,10 @@ describe("STM", function () {
             });
         });
 
-        it("should execute in context", function () {
+        it("should update in context", function () {
             this.timeout(timeout);
 
-            return execute(["../stm/worker-execute", maxExecutions, false])
+            return execute(["../stm/worker-update", maxExecutions, false])
             .then((result) => {
                 const count = result.reduce((out, result) => {
                     return (out + result);

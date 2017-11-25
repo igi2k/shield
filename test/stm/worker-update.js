@@ -8,7 +8,7 @@ module.exports = async function workerTask(id, executionLimit) {
         clientMap.clean();
     }
 
-    return clientMap.execute(key, (entry) => {
+    return clientMap.update(key, (entry) => {
         entry.value = id;
     }, { value: -1 })
     .then((entry) => {

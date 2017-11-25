@@ -1,6 +1,6 @@
 {
   "name": "shield",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Authentication shield for web apps",
   "author": "Pavel Nejedly <pavel.nejedly@atlas.cz>",
   "repository": {
