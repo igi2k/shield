@@ -99,7 +99,7 @@ function createShield(app) {
 
     // add associated app module
     if (app.hasOwnProperty("module")) {
-        const moduleName = (app.development ? "./apps/" : "") + app.module;
+        const moduleName = app.module;
         // we need to link it this way to get mount event
         const handler = require(moduleName);
         if (typeof handler.disable === "function") {

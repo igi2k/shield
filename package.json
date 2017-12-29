@@ -1,6 +1,6 @@
 {
   "name": "shield",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Authentication shield for web apps",
   "author": "Pavel Nejedly <pavel.nejedly@atlas.cz>",
   "repository": {
@@ -16,13 +16,13 @@
     "express": "~4.16.2",
     "gaikan": "~2.0.2",
     "jsonwebtoken": "~8.1.0",
-    "keytar": "~4.0.5",
+    "keytar": "~4.1.0",
     "morgan": "~1.9.0",
     "request": "~2.83.0"
   },
   "devDependencies": {
-    "eslint": "~4.11.0",
-    "mocha": "~4.0.1"
+    "eslint": "~4.14.0",
+    "mocha": "~4.1.0"
   },
   "scripts": {
     "test": "mocha",
@@ -30,6 +30,6 @@
     "get:hash": "node shield.js hash"
   },
   "engines": {
-    "node": "~8.9.0"
+    "node": "~8.9.3"
   }
 }
