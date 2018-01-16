@@ -38,7 +38,16 @@ Enables `https` module by specifying certificate/key pair in `pem` format.
 - `key` - private key
 - `cert` - public certificate
 - `ca` - certificate issuing authority
+
 ### `sso`
 Enables third party authentication through json web tokens.
 - `url` - handshake server
 - `cert` - server certificate in `pem` format
+
+### `logging`
+Customization of logging output.
+- `module` - module with logging customization function
+```
+async (morgan, executeSync, config) => {}
+```
+- `config` - custom module config (optional)

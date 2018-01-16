@@ -4,7 +4,6 @@ const path = require("path");
 
 // express middleware
 const cookieParser = require("cookie-parser");
-const morgan = require("morgan");
 // templating engine
 const htmlEngine = require("gaikan");
 // core utils
@@ -49,14 +48,18 @@ app.locals.api = {
     stm: require("./lib/stm"),
     queue: require("./lib/stm-queue")
 };
+
 // logging
-//TODO: configurable logging
-const ipLookup = config["ip-lookup"] || {};
-morgan.token("remote-addr-lookup", function (req, res) {
-    const auth = res.locals.auth || {};
-    const ip = auth.isExternal ? auth.user : this["remote-addr"](req);
-    return ipLookup[ip] || ip;
-});
+async function initLogging(logger) {
+    const morgan = logger.init();
+    const logging = config.logging;
+    if (logging) {
+        const module = require(logging.module);
+        await module(morgan, core.executeSync, logging.config);
+    }
+    return morgan(logger.format, { stream: logger.stream });
+}
+
 // html base
 function setHtmlBaseUrl(req, res) {
     const auth = res.locals.auth;
@@ -137,7 +140,8 @@ async function bootstrap(logger, env) {
 
     app.server = server;
     app.rootDir = rootDir;
-    app.use(morgan(logger.format, logger.options));
+    
+    app.use(await initLogging(logger));
 
     const checkAuth = shieldAuth[0];
     app.route("/").all(checkAuth);
@@ -213,7 +217,7 @@ async function bootstrap(logger, env) {
     const key = await core.executeSync("cookie", () => {
         // for HMAC-SHA256 
         // this key should not exceeded 512bits ([64])
-        // maximum lenght should incorporate 32bit space for random value ([4])
+        // maximum length should incorporate 32bit space for random value ([4])
         // predefined cookie key from config has precedence
         return cookieKey || core.generateKey(48);
     });
