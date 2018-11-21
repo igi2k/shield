@@ -20,12 +20,12 @@ describe("core", function () {
 
         it("should handle value", function () {
             return core.promisify(testOk)(value).then((result) => {
-                assert.equal(value, result);
+                assert.equal(result, value);
             });
         });
         it("should handle error", function () {
             return core.promisify(testError)(value).then(() => { throw new Error("No Error"); }).catch((error) => {
-                assert.equal(value, error.message);
+                assert.equal(error.message, value);
             });
         });
     });
@@ -33,14 +33,14 @@ describe("core", function () {
     describe("encrypt", function () {
         it("should encrypt", async function () {
             const result = await core.encrypt(dataResult, key, name);
-            assert.equal(dataResultEncrypted, result);
+            assert.equal(result, dataResultEncrypted);
         });
     });
 
     describe("decrypt", function () {
         it("should decrypt", async function () {
             const result = await core.decrypt(dataResultEncrypted, key, name);
-            assert.equal(dataResult, result);
+            assert.equal(result, dataResult);
         });
     });
 
@@ -50,7 +50,7 @@ describe("core", function () {
         it("should generate key", async function () {
             const result = await core.generateKey(keySize);
             const data = Buffer.from(result, "hex");
-            assert.equal(keySize, data.length);
+            assert.equal(data.length, keySize);
             //TODO: check uniformity
         });
     });
@@ -61,7 +61,7 @@ describe("core", function () {
 
         it("should generate secret", function () {
             const result = core.generateSecret(key, ipAddress);
-            assert.equal(key.length / 2 + 4, result.length);
+            assert.equal(result.length, key.length / 2 + 4);
         });
     });
 
@@ -70,12 +70,12 @@ describe("core", function () {
 
         it("should sync value (standalone)", async function () {
             const result = await core.executeSync("test", () => value);
-            assert.equal(value, result);
+            assert.equal(result, value);
         });
 
         it("should sync object (standalone)", async function () {
             const result = await core.executeSync("test-object", () => ({ test: value }));
-            assert.equal(value, result.test);
+            assert.equal(result.test, value);
         });
     });
 });

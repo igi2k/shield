@@ -7,11 +7,11 @@ describe("Authentication Service", function () {
     const authService = AuthService(appStub);
     
     describe("authenticate", function () {
-        const hammeringDelay = 10 * 1000; // 10s
+        const hammeringDelay = authService.hammeringDelay;
 
         it("should authenticate", async function() {
             const token = await authService.authenticate(credentials, ipAddress);
-            assert.equal(credentials.name, token.user);
+            assert.equal(token.user, credentials.name);
         });
 
         it("should handle wrong user", async function() {
@@ -23,9 +23,9 @@ describe("Authentication Service", function () {
             try {
                 await authService.authenticate(wrongCredentials, ipAddress);
             } catch (error) {
-                assert.equal("Wrong Credentials", error.message);
+                assert.equal(error.message, "Wrong Credentials");
                 const errorMessage = `Unknown user [${wrongCredentials.name}]`;
-                assert.equal(true, loggerMock.containsError(errorMessage), errorMessage);
+                assert.equal(loggerMock.containsError(errorMessage), true, errorMessage);
                 return;
             }
             throw new Error("No Error");
@@ -40,9 +40,9 @@ describe("Authentication Service", function () {
             try {
                 await authService.authenticate(wrongCredentials, ipAddress);
             } catch (error) {
-                assert.equal("Wrong Credentials", error.message);
+                assert.equal(error.message, "Wrong Credentials");
                 const errorMessage = `Wrong password for user [${wrongCredentials.name}]`;
-                assert.equal(true, loggerMock.containsError(errorMessage), errorMessage);
+                assert.equal(loggerMock.containsError(errorMessage), true, errorMessage);
                 return;
             }
             throw new Error("No Error");
@@ -55,7 +55,7 @@ describe("Authentication Service", function () {
             const withCredentials = (credentials) => {
                 return (error) => {
                     if(error) {
-                        assert.equal("Wrong Credentials", error.message);
+                        assert.equal(error.message, "Wrong Credentials");
                     }
                     return authService.authenticate(credentials, ipAddress);
                 };    
@@ -69,8 +69,8 @@ describe("Authentication Service", function () {
             .catch(withCredentials(credentials))
             .then((token) => {
                 const diff = Date.now() - time;
-                assert.equal(credentials.name, token.user);
-                assert.equal(true, diff > hammeringDelay * 2, `hammering delay ${diff}`);
+                assert.equal(token.user, credentials.name);
+                assert.equal(diff > hammeringDelay * 2, true, `hammering delay ${diff}`);
             });
         });
 
@@ -99,7 +99,7 @@ describe("Authentication Service", function () {
 
         it("should verify authentication", async function() {
             const token = await authService.verify(tokenData, ipAddress);
-            assert.equal(credentials.name, token.user);
+            assert.equal(token.user, credentials.name);
         });
 
         it("should verify sso authentication", async function() {
@@ -109,15 +109,15 @@ describe("Authentication Service", function () {
                 } 
             }));
             const token = await authService.verify(ssoData, ipAddress);
-            assert.equal(ssoUser, token.user);
+            assert.equal(token.user, ssoUser);
         });
 
         it("should fail to verify authentication", async function() {
             try {
                 const token = await authService.verify(ssoData, ipAddress);
-                assert.notEqual(ssoUser, token.user);
+                assert.notEqual(token.user, ssoUser);
             } catch (error) {
-                assert.equal("Wrong Credentials", error.message);
+                assert.equal(error.message, "Wrong Credentials");
             }
         });
     });
@@ -126,7 +126,7 @@ describe("Authentication Service", function () {
 
         it("should generate password hash", async function() {
             const hash = await AuthService.generateAuthHash(credentials, appStub.keys.password);
-            assert.equal(true, hash.startsWith(appStub.locals.users[credentials.name].key.substr(0, 20)), "wrong auth hash");
+            assert.equal(hash.startsWith(appStub.locals.users[credentials.name].key.substr(0, 20)), true, "wrong auth hash");
         });
     });
 
@@ -178,8 +178,8 @@ describe("Authentication Service", function () {
             const authCheck = require("../lib/check-auth")(authService, methodCallMock.stubMethod);
             const next = (value) => {
                 try {
-                    assert.equal("route", value);
-                    assert.equal(1, methodCallMock.count);
+                    assert.equal(value, "route");
+                    assert.equal(methodCallMock.count, 1);
                     done();
                 } catch (error) {
                     done(error);
@@ -199,8 +199,8 @@ describe("Authentication Service", function () {
             const authCheck = require("../lib/check-auth")(authService, methodCallMock.stubMethod);
             const next = (value) => {
                 try {
-                    assert.equal(undefined, value);
-                    assert.equal(1, methodCallMock.count);
+                    assert.equal(value, undefined);
+                    assert.equal(methodCallMock.count, 1);
                     done();
                 } catch (error) {
                     done(error);
@@ -221,7 +221,7 @@ describe("Authentication Service", function () {
                 }
             };
             return simpleSSO(options, logger).then((result) => {
-                assert.notEqual(undefined, result);
+                assert.notEqual(result, undefined);
             });
         });
     });

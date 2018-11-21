@@ -12,7 +12,7 @@ module.exports = async function workerTask(id, executionLimit) {
         entry.value = id;
     }, { value: -1 })
     .then((entry) => {
-        assert.equal(id, entry.value, JSON.stringify(entry));
+        assert.equal(entry.value, id, JSON.stringify(entry));
         return executionLimit;
     });
 };
