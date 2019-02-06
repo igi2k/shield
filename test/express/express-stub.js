@@ -52,7 +52,9 @@ module.exports = {
 
     responseStub: {
         setHeader: () => {},
-        status: () => {},
+        status() { 
+            return this; 
+        },
         cookie: () => {},
         clearCookie: () => {},
         locals: {}
