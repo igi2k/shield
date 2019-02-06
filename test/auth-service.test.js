@@ -125,25 +125,30 @@ describe("Authentication Service", function () {
     describe("generateAuthHash", function () {
 
         it("should generate password hash", async function() {
-            const hash = await AuthService.generateAuthHash(credentials, appStub.keys.password);
+            const hash = await authService.generateAuthHash(credentials);
             assert.equal(hash.startsWith(appStub.locals.users[credentials.name].key.substr(0, 20)), true, "wrong auth hash");
         });
     });
 
     describe("Basic authentication", function () {
-        class ShieldError extends Error {
-        }
-        const encodedCredentials = Buffer.from(`${credentials.name}:${credentials.pass}`).toString("base64");
+        const createResponse = (done) => Object.assign({}, responseStub, { shieldError: () => done(new Error("Shield Error"))});
+        const createRequest = (credentials) => ({
+            ip: ipAddress,
+            headers: {
+                authorization: `Basic ${credentials}`
+            },
+            secure: true
+        });
+        const basicAuth = require("../lib/auth/basic-auth")(authService, { cookieName: "token" });
+
         it("should authenticate", function(done) {
-            const requestStub = {
-                ip: ipAddress,
-                headers: {
-                    authorization: `Basic ${encodedCredentials}`
-                },
-                secure: true
-            };
-            const basicAuth = require("../lib/auth/basic-auth")(authService, ShieldError);
-            basicAuth(requestStub, responseStub, done);
+            const encodedCredentials = Buffer.from(`${credentials.name}:${credentials.pass}`).toString("base64");
+            basicAuth(createRequest(encodedCredentials), createResponse(done), done);
+        });
+
+        it("should not authenticate", function(done) {
+            const encodedWrongCredentials = Buffer.from(`${credentials.name}:wrong`).toString("base64");
+            basicAuth(createRequest(encodedWrongCredentials), createResponse((error) => done(assert.equal(error.message, "Shield Error"))), done);
         });
     });
 
@@ -166,6 +171,8 @@ describe("Authentication Service", function () {
             tokenData = tokenResult.signedData;
         });
 
+        const cookieAuthCheck = require("../lib/auth/cookie-auth-check")(authService, { cookieName: "token" });
+
         it("should check token", function(done) {
             const methodCallMock = new MethodCallMock();
             const requestStub = {
@@ -175,7 +182,7 @@ describe("Authentication Service", function () {
                 },
                 secure: true
             };
-            const authCheck = require("../lib/check-auth")(authService, methodCallMock.stubMethod);
+            const authCheck = require("../lib/check-auth")(cookieAuthCheck, methodCallMock.stubMethod);
             const next = (value) => {
                 try {
                     assert.equal(value, "route");
@@ -196,7 +203,7 @@ describe("Authentication Service", function () {
                     "token": "wrong token"
                 }
             };
-            const authCheck = require("../lib/check-auth")(authService, methodCallMock.stubMethod);
+            const authCheck = require("../lib/check-auth")(cookieAuthCheck, methodCallMock.stubMethod);
             const next = (value) => {
                 try {
                     assert.equal(value, undefined);

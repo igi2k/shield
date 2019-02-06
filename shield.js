@@ -4,7 +4,7 @@ const path = require("path");
 
 // express middleware
 const cookieParser = require("cookie-parser");
-// templating engine
+// template engine
 const htmlEngine = require("gaikan");
 // core utils
 const core = require("./lib/util/core");
@@ -33,11 +33,16 @@ const config = loadConfig();
 
 const ShieldProxy = require("./lib/shield-proxy");
 const ShieldAccess = require("./lib/shield-access");
-const AuthService = require("./lib/auth-service");
-const authService = AuthService(app);
+
+const services = require("./lib/shield-services")(app, [
+    [require("./lib/auth-service")],
+    [require("./lib/auth/cookie-auth-check"), { cookieName: "token" }],
+    [require("./lib/auth/basic-auth"), { cookieName: "token"}]
+]);
+
 const shieldAuth = [
-    require("./lib/check-auth")(authService, setHtmlBaseUrl),
-    require("./lib/auth/basic-auth")(authService, ShieldError)
+    require("./lib/check-auth")(services["authentication-check"], setHtmlBaseUrl),
+    services["authentication"]
 ];
 
 // setup access
@@ -76,9 +81,9 @@ function createShield(app) {
     const shieldMapping = express.Router();
     // shield authentication
     shieldMapping.route("*").all(shieldAuth);
-    // shield access controll
+    // shield access control
     if (app.hasOwnProperty("access")) {
-        shieldMapping.route("*").all(ShieldAccess(app.access, ShieldError));
+        shieldMapping.route("*").all(ShieldAccess(app.access));
     }
     if (app.hasOwnProperty("url")) {
         // shield proxy
@@ -86,19 +91,15 @@ function createShield(app) {
     }
 
     function getPaths(app) {
-        return [app.path, app.alias]
+        return [ app.path, app.alias ]
         .filter((path) => path !== undefined)
-        .map((path) => {
-            return path.startsWith("/") ? path : `/${path}`;
-        });
+        .map((path) => path.startsWith("/") ? path : `/${path}`);
     }
 
     const paths = getPaths(app);
 
     // link
-    paths.forEach((path) => {
-        this.use(path, shieldMapping);
-    });
+    paths.forEach((path) => this.use(path, shieldMapping));
 
     // add associated app module
     if (app.hasOwnProperty("module")) {
@@ -125,9 +126,7 @@ function createShield(app) {
         // add logger
         handler.logger = this.logger;
         // link
-        paths.forEach((path) => {
-            this.use(path, handler);
-        });
+        paths.forEach((path) => this.use(path, handler));
     }
 }
 
@@ -143,9 +142,17 @@ async function bootstrap(logger, env) {
     
     app.use(await initLogging(logger));
 
-    const checkAuth = shieldAuth[0];
+    app.use((req, res, next) => {
+        res.shieldError = (next, template, locals) => {
+            next(new ShieldError(template, locals));
+        };
+        next();
+    });
+
+    const [ checkAuth ] = shieldAuth;
+
     app.route("/").all(checkAuth);
-    app.route("/").get(function (req, res) {
+    app.route("/").get(function indexPage(req, res) {
         const auth = res.locals.auth;
         res.status(200).render("index", { 
             title: "Mapping", 
@@ -160,7 +167,7 @@ async function bootstrap(logger, env) {
     /**
      * Not found handler
      */
-    app.use(function (req, res) {
+    app.use(function notFoundHandler(req, res) {
         checkAuth(req, res, () => {
             res.status(404).render("404", { title: "404" });
         });
@@ -270,10 +277,10 @@ async function startServer() {
 if (require.main === module) {
     // generate password hash
     if (process.argv[2] == "hash") {
-        return AuthService.generateAuthHash({
+        return services["authentication"].generateAuthentication({
             name: process.argv[3],
             pass: process.argv[4]
-        }, config.keys.password)
+        })
         .catch((error) => {
             return `ERROR: ${error.message}`;
         })
