@@ -2,7 +2,7 @@
 Authentication shield for web apps
 
 ## Configuration
-Configuration is read form `root/config.json`.
+Configuration is read form `config/config.json`.
 
 ### `apps`
 Define routing or application modules.

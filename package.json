@@ -1,6 +1,6 @@
 {
   "name": "shield",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Authentication shield for web apps",
   "author": "Pavel Nejedly <pavel.nejedly@atlas.cz>",
   "repository": {
@@ -9,18 +9,22 @@
   },
   "license": "Apache-2.0",
   "main": "shield.js",
+  "bin":{
+    "shield": "./shield-cluster.js",
+    "shield-certificate": "./bin/create-certificate.sh"
+  },
   "dependencies": {
     "argon2": "~0.20.1",
-    "cookie-parser": "~1.4.3",
+    "cookie-parser": "~1.4.4",
     "express": "~4.16.4",
     "gaikan": "~2.0.2",
-    "jsonwebtoken": "~8.4.0",
-    "keytar": "~4.4.0",
+    "jsonwebtoken": "~8.5.0",
+    "keytar": "~4.4.1",
     "morgan": "~1.9.1",
     "request": "~2.88.0"
   },
   "devDependencies": {
-    "eslint": "~5.13.0",
+    "eslint": "~5.14.1",
     "mocha": "~5.2.0"
   },
   "scripts": {

@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /**
  * Created with IntelliJ IDEA.
  * User: IGI2k
@@ -16,9 +18,10 @@ function startWorker() {
     const prefix = `${worker.id}: `;
 
     worker.on("message", (message) => { // serialize console logs
-        if (message.type == "log") {
+        const { type } = message;
+        if (type === "log") {
             process.stdout.write(`${prefix}${message.data}`);
-        } else if (message.type == "stm") {
+        } else if (type === "stm") {
             stm.handle(worker, message);
         } else {
             process.stdout.write(`${prefix}unsupported message: ${JSON.stringify(message)}\n`);
@@ -29,17 +32,17 @@ function startWorker() {
 function displayBanner(out) {
     function charConvert(input) {
         let base = 0x2070;
-        if(input === "2" || input === "3") {
+        if (input === "2" || input === "3") {
             base = 0x00B0;
-        } else if(input === ".") {
+        } else if (input === ".") {
             return "\u00B7";
         }
         return String.fromCharCode(base + parseInt(input));
     }
-    const banner = fs.readFileSync(path.resolve(__dirname, "root", "banner"))
+    const banner = fs.readFileSync(path.resolve(__dirname, "banner"))
     .toString()
     .replace("${version}", version.replace(/[0-9.]/g, charConvert));
-    
+
     out.write(`${color.yellow.bold}${banner}${color.reset}\n`);
 }
 
@@ -51,12 +54,25 @@ if (cluster.isMaster) {
     cluster.on("exit", function (worker, code, signal) {
         process.stdout.write(`main: Worker ${worker.id} died with exit code ${code} (${signal})\n`);
         queue.clean(worker.id);
-        startWorker();
+        if (signal !== "SIGKILL") {
+            startWorker();
+        }
     });
 
     for (let i = 0; i < numCPUs; i++) {
         startWorker();
     }
+
 } else {
-    require("./shield")();
+    (async () => {
+        try {
+            await require("./shield")();
+        } catch (error) {
+            // initialization error
+            process.send({
+                type: "log",
+                data: `${error.stack}\n`
+            }, () => process.kill(process.pid, "SIGKILL"));
+        }
+    })();
 }

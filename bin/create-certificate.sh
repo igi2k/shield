@@ -3,13 +3,21 @@
 ca_name=ca
 server_name=shield
 
+# fix for loading cerificate config
+SCRIPT_LINK=$(readlink $0)
+if [ -z ${SCRIPT_LINK} ]; then
+  CONF_DIR="$( cd $(dirname $0) && pwd)"
+else
+  CONF_DIR="$( cd "$(dirname $0)" && cd "$(dirname ${SCRIPT_LINK})" && pwd)"
+fi;
+
 # CA
-ca_config_file=${ca_name}-csr.conf
+ca_config_file="${CONF_DIR}/${ca_name}-csr.conf"
 ca_key_file=${ca_name}-key.pem
 ca_cert_file=${ca_name}-cert.pem
 
 # Server
-server_config_file=${server_name}-csr.conf
+server_config_file="${CONF_DIR}/${server_name}-csr.conf"
 server_key_file=${server_name}-key.pem
 server_csr_file=${server_name}-csr.pem
 server_cert_file=${server_name}-cert.pem
