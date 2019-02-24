@@ -81,20 +81,18 @@ describe("Authentication Service", function () {
 
     describe("verify", function () {
 
-        const ssoKey = "sso-secret-key";
         const ssoUser = "sso-user";
+        const ssoServer = require("./sso/server");
+
         let ssoData;
+        let ssoKey;
         let tokenData; 
 
-        before(function() {
-            const simpleSSO = require("../lib/auth/simple-sso");
-            return Promise.all([
-                simpleSSO.testSign(ssoUser, ssoKey),
-                authService.authenticate(credentials, ipAddress)
-            ]).then(([ssoSign, tokenResult]) =>{
-                ssoData = ssoSign;
-                tokenData = tokenResult.signedData;
-            });
+        before(async () => {
+            [[ssoData, ssoKey], tokenData] = await Promise.all([
+                ssoServer.dummySign(ssoUser),
+                authService.authenticate(credentials, ipAddress).then(result => result.signedData)
+            ]);
         });
 
         it("should verify authentication", async function() {
@@ -218,17 +216,31 @@ describe("Authentication Service", function () {
     });
 
     describe("simple Single sign-on", function () {
-        it.skip("should exchange key", function() {
+
+        let server;
+
+        before(async () => {
+            server = await require("./sso/server")("localhost");
+        });
+
+        after(() => {
+            server.close();
+        });
+
+        it("should exchange key", function() {
             const simpleSSO = require("../lib/auth/simple-sso");
             const logger = {
                 error: () => {}
             };
             const options = {
+                url: server.url,
+                cert: server.publicKey,
                 certs: {
+                    key: server.privateKey
                 }
             };
             return simpleSSO(options, logger).then((result) => {
-                assert.notEqual(result, undefined);
+                assert.equal(result, server.secret);
             });
         });
     });
