@@ -29,6 +29,7 @@ class ShieldError {
     }
 }
 
+const configDirectory = Symbol("configDirectory");
 const config = loadConfig();
 
 const ShieldProxy = require("./lib/shield-proxy");
@@ -73,8 +74,10 @@ function setHtmlBaseUrl(req, res) {
 }
 
 function loadConfig() {
-    const fileName = path.join(__dirname, "root", "config.json");
-    return require(fileName);
+    const filename = path.resolve("config", "config.json");
+    return Object.assign(require(path.resolve(filename)), {
+        [configDirectory] : path.dirname(filename)
+    });
 }
 
 function createShield(app) {
@@ -131,7 +134,7 @@ function createShield(app) {
 }
 
 async function bootstrap(logger, env) {
-    const rootDir = path.join(__dirname, "root");
+    const rootDir = config[configDirectory];
     const server = await require("./lib/shield-start").create({
         rootDir: rootDir,
         tls: config.tls
@@ -142,7 +145,7 @@ async function bootstrap(logger, env) {
     
     app.use(await initLogging(logger));
 
-    app.use((req, res, next) => {
+    app.use((_, res, next) => {
         res.shieldError = (next, template, locals) => {
             next(new ShieldError(template, locals));
         };
@@ -250,27 +253,23 @@ async function startServer() {
     const env = app.get("env");
     const logger = app.logger = require("./lib/shield-logger");
 
-    try {
-        const passphrase = await keychain(logger);
-        if (passphrase != null && config.tls) {
-            config.tls["passphrase"] = passphrase;
-        }
-        const server = await bootstrap(logger, env);
+    const passphrase = await keychain(logger);
+    if (passphrase != null && config.tls) {
+        config.tls["passphrase"] = passphrase;
+    }
+    const server = await bootstrap(logger, env);
 
-        server.on("error", (error) => {
-            logger.error(error);
-        })
-        .listen(config.port || 8080, config.hostname, function () {
-            logger.log("[%s] listening on port %d (%s)", env, this.address().port, this.type);
-        });
-
-        if (config.sso) {
-            const sso = Object.assign({ rootDir: app.rootDir }, config.sso, { certs: config.tls });
-            const key = await require("./lib/auth/simple-sso")(sso, logger);
-            app.sso = { key };
-        }
-    } catch (error) {
+    server.on("error", (error) => {
         logger.error(error);
+    })
+    .listen(config.port || 8080, config.hostname, function () {
+        logger.log("[%s] listening on port %d (%s)", env, this.address().port, this.type);
+    });
+
+    if (config.sso) {
+        const sso = Object.assign({ rootDir: app.rootDir }, config.sso, { certs: config.tls });
+        const key = await require("./lib/auth/simple-sso")(sso, logger);
+        app.sso = { key };
     }
 }
 
@@ -286,7 +285,9 @@ if (require.main === module) {
         })
         .then(console.log); //eslint-disable-line
     }
-    startServer();
+    startServer().catch((error) => {
+        console.error(error.stack); //eslint-disable-line
+    });
 } else {
     module.exports = startServer;
 }
