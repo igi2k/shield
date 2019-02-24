@@ -1,4 +1,7 @@
 body {
+  --top-bar-background: #EDEAEA;
+  --top-bar-background-inverse: #555;
+
   padding: 80px 100px;
   font: 13px "Helvetica Neue", "Lucida Grande", "Arial";
   background: #ECE9E9 -webkit-gradient(linear, 0% 0%, 0% 100%, from(#fff), to(#ECE9E9));
@@ -55,7 +58,8 @@ ul li {
     }        
 .top-bar {
     height: 32px;
-    background-color: #EDEAEA;
+    background-color: var(--top-bar-background);
+    color: var(--top-bar-background-inverse);
     display: flex;
     align-items: center;
     justify-content: flex-end;
