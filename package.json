@@ -1,11 +1,11 @@
 {
-  "name": "shield",
+  "name": "@igi2k/shield",
   "version": "0.6.0",
   "description": "Authentication shield for web apps",
   "author": "Pavel Nejedly <pavel.nejedly@atlas.cz>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/igi2k/shield.git"
+    "url": "https://github.com/igi2k/shield.git"
   },
   "license": "Apache-2.0",
   "main": "shield.js",
