@@ -55,12 +55,19 @@ app.locals.api = {
     queue: require("./lib/stm-queue")
 };
 
+// custom modules are resolved in working dir
+const workingDir = path.resolve(".");
+const resolveModule = (id) => {
+    const modulePath = require.resolve(id, { paths: [ workingDir ] });
+    return require(modulePath);
+};
+
 // logging
 async function initLogging(logger) {
     const morgan = logger.init();
     const logging = config.logging;
     if (logging) {
-        const module = require(logging.module);
+        const module = resolveModule(logging.module);
         await module(morgan, core.executeSync, logging.config);
     }
     return morgan(logger.format, { stream: logger.stream });
@@ -108,7 +115,7 @@ function createShield(app) {
     if (app.hasOwnProperty("module")) {
         const moduleName = app.module;
         // we need to link it this way to get mount event
-        const handler = require(moduleName);
+        const handler = resolveModule(moduleName);
         if (typeof handler.disable === "function") {
             handler.disable("x-powered-by");
         }
