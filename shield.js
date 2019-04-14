@@ -29,21 +29,51 @@ class ShieldError {
     }
 }
 
+// custom modules are resolved in working dir
+const workingDir = path.resolve(".");
+const resolveModule = (id) => {
+    const modulePath = require.resolve(id, { paths: [ workingDir ] });
+    return require(modulePath);
+};
+
+const configureService = (source, providers = []) => {
+    const [ module, config ] =  !Array.isArray(source) ? [source] : source;
+    return [resolveModule(providers[module] || module), config];
+};
+
 const configDirectory = Symbol("configDirectory");
 const config = loadConfig();
 
 const ShieldProxy = require("./lib/shield-proxy");
 const ShieldAccess = require("./lib/shield-access");
 
+const serviceProviders = {
+    authentication: {
+        "BasicAuthentication": "./lib/auth/basic-auth",
+        "CertificateAuthentication": "./lib/auth/cert-auth"
+    }
+};
+
 const services = require("./lib/shield-services")(app, [
     [require("./lib/auth-service")],
-    [require("./lib/auth/cookie-auth-check"), { cookieName: "token" }],
-    [require("./lib/auth/basic-auth"), { cookieName: "token" }],
-    [require("./lib/auth/local-auth-service")]
-]);
+    [require("./lib/auth/local-auth-service")],
+    [require("./lib/auth/cert-auth-service")],
+    [require("./lib/auth/cookie-auth-filter"), { cookieName: "token" }],
+]
+.concat(configurableServices({ "authentication": "BasicAuthentication" }))
+);
+
+function configurableServices(defaults) {
+    const { plugins } = config;
+    const services = Object.assign(defaults, plugins);
+    
+    const { authentication } = services;
+
+    return [configureService(authentication, serviceProviders.authentication)];
+}
 
 const shieldAuth = [
-    require("./lib/check-auth")(services["authentication-check"], setHtmlBaseUrl),
+    require("./lib/check-auth")(services["authentication-filter"].check, setHtmlBaseUrl),
     services["authentication"]
 ];
 
@@ -56,20 +86,14 @@ app.locals.api = {
     queue: require("./lib/stm-queue")
 };
 
-// custom modules are resolved in working dir
-const workingDir = path.resolve(".");
-const resolveModule = (id) => {
-    const modulePath = require.resolve(id, { paths: [ workingDir ] });
-    return require(modulePath);
-};
-
 // logging
 async function initLogging(logger) {
     const morgan = logger.init();
-    const logging = config.logging;
+    //TODO: merge with services
+    const { logging } = config.plugins;
     if (logging) {
-        const module = resolveModule(logging.module);
-        await module(morgan, core.executeSync, logging.config);
+        const [module, config] = configureService(logging);
+        await module(morgan, core.executeSync, config);
     }
     return morgan(logger.format, { stream: logger.stream });
 }
@@ -83,7 +107,10 @@ function setHtmlBaseUrl(req, res) {
 
 function loadConfig() {
     const filename = path.resolve("config", "config.json");
-    return Object.assign(require(path.resolve(filename)), {
+    const defaults = { 
+        plugins: {}
+    };
+    return Object.assign(defaults, require(path.resolve(filename)), {
         [configDirectory]: path.dirname(filename)
     });
 }
@@ -121,7 +148,7 @@ function createShield(app) {
             handler.disable("x-powered-by");
         }
         // add custom module config
-        if(typeof handler.locals === "object") {
+        if (typeof handler.locals === "object") {
             const api = this.locals.api;
             const moduleSTM = api.stm.region(moduleName);
             const moduleQueue = api.queue.region(`${moduleName}-queue`);
