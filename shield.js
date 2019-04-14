@@ -38,7 +38,8 @@ const ShieldAccess = require("./lib/shield-access");
 const services = require("./lib/shield-services")(app, [
     [require("./lib/auth-service")],
     [require("./lib/auth/cookie-auth-check"), { cookieName: "token" }],
-    [require("./lib/auth/basic-auth"), { cookieName: "token"}]
+    [require("./lib/auth/basic-auth"), { cookieName: "token" }],
+    [require("./lib/auth/local-auth-service")]
 ]);
 
 const shieldAuth = [
@@ -83,7 +84,7 @@ function setHtmlBaseUrl(req, res) {
 function loadConfig() {
     const filename = path.resolve("config", "config.json");
     return Object.assign(require(path.resolve(filename)), {
-        [configDirectory] : path.dirname(filename)
+        [configDirectory]: path.dirname(filename)
     });
 }
 

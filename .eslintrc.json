@@ -8,22 +8,15 @@
     },
     "extends": "eslint:recommended",
     "rules": {
-        "indent": [
-            "error",
-            4,
+        "indent": ["error", 4,
             { "MemberExpression": 0 }
         ],
-        "linebreak-style": [
-            "error",
-            "unix"
+        "linebreak-style": ["error", "unix"],
+        "quotes": ["error", "double"],
+        "semi": ["error", "always", { "omitLastInOneLineBlock": true }],
+        "object-curly-spacing": ["error", "always", 
+            { "objectsInObjects": false }
         ],
-        "quotes": [
-            "error",
-            "double"
-        ],
-        "semi": [
-            "error",
-            "always"
-        ]
+        "key-spacing": ["error"]
     }
 }
