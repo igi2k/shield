@@ -5,12 +5,19 @@ describe("Authentication Service", function () {
     const { appStub, ipAddress, credentials, responseStub, LoggerMock } = require("./express/express-stub");
     const AuthService = require("../lib/auth-service");
     const authService = AuthService(appStub);
-    
+    const dummyAuth = async (credentials, { getUser }) => {
+        return {
+            user: await getUser(credentials.name),
+            payload: { user: credentials.name }
+        };
+    };
+    const cookieAuthFilter = require("../lib/auth/cookie-auth-filter")(authService, { cookieName: "token" });
+
     describe("authenticate", function () {
         const hammeringDelay = authService.hammeringDelay;
 
         it("should authenticate", async function() {
-            const token = await authService.authenticate(credentials, ipAddress);
+            const token = await authService.authenticate(dummyAuth.bind(null, credentials), ipAddress);
             assert.equal(token.user, credentials.name);
         });
 
@@ -21,7 +28,7 @@ describe("Authentication Service", function () {
                 name: "wrong"
             };
             try {
-                await authService.authenticate(wrongCredentials, ipAddress);
+                await authService.authenticate(dummyAuth.bind(null, wrongCredentials), ipAddress);
             } catch (error) {
                 assert.equal(error.message, "Wrong Credentials");
                 const errorMessage = `Unknown user [${wrongCredentials.name}]`;
@@ -33,12 +40,14 @@ describe("Authentication Service", function () {
 
         it("should handle wrong password", async function() {
             const loggerMock = new LoggerMock();
-            const authService = AuthService(Object.assign({}, appStub, { logger: loggerMock.logger }));
             const wrongCredentials = {
                 name: credentials.name
             };
+            const authService = AuthService(Object.assign({}, appStub, { logger: loggerMock.logger }));
+            const credentialsService = require("../lib/auth/local-auth-service")(authService, appStub);
+
             try {
-                await authService.authenticate(wrongCredentials, ipAddress);
+                await credentialsService.authenticate(wrongCredentials, ipAddress);
             } catch (error) {
                 assert.equal(error.message, "Wrong Credentials");
                 const errorMessage = `Wrong password for user [${wrongCredentials.name}]`;
@@ -50,14 +59,14 @@ describe("Authentication Service", function () {
 
         it("should protect from hammering", function() {
             const wrongCredentials = {
-                name: credentials.name
+                name: "wrong"
             };
             const withCredentials = (credentials) => {
                 return (error) => {
-                    if(error) {
+                    if (error) {
                         assert.equal(error.message, "Wrong Credentials");
                     }
-                    return authService.authenticate(credentials, ipAddress);
+                    return authService.authenticate(dummyAuth.bind(null, credentials), ipAddress);
                 };    
             };
             this.timeout(hammeringDelay * 2 + 500);
@@ -91,7 +100,7 @@ describe("Authentication Service", function () {
         before(async () => {
             [[ssoData, ssoKey], tokenData] = await Promise.all([
                 ssoServer.dummySign(ssoUser),
-                authService.authenticate(credentials, ipAddress).then(result => result.signedData)
+                authService.authenticate(dummyAuth.bind(null, credentials), ipAddress).then(result => result.signedData)
             ]);
         });
 
@@ -120,16 +129,8 @@ describe("Authentication Service", function () {
         });
     });
 
-    describe("generateAuthHash", function () {
-
-        it("should generate password hash", async function() {
-            const hash = await authService.generateAuthHash(credentials);
-            assert.equal(hash.startsWith(appStub.locals.users[credentials.name].key.substr(0, 20)), true, "wrong auth hash");
-        });
-    });
-
     describe("Basic authentication", function () {
-        const createResponse = (done) => Object.assign({}, responseStub, { shieldError: () => done(new Error("Shield Error"))});
+        const createResponse = (done) => Object.assign({}, responseStub, { shieldError: () => done(new Error("Shield Error")) });
         const createRequest = (credentials) => ({
             ip: ipAddress,
             headers: {
@@ -137,8 +138,9 @@ describe("Authentication Service", function () {
             },
             secure: true
         });
-        const basicAuth = require("../lib/auth/basic-auth")(authService, { cookieName: "token" });
-
+        const credentialsService = require("../lib/auth/local-auth-service")(authService, appStub);
+        const basicAuth = require("../lib/auth/basic-auth")(credentialsService, cookieAuthFilter);
+        
         it("should authenticate", function(done) {
             const encodedCredentials = Buffer.from(`${credentials.name}:${credentials.pass}`).toString("base64");
             basicAuth(createRequest(encodedCredentials), createResponse(done), done);
@@ -147,6 +149,11 @@ describe("Authentication Service", function () {
         it("should not authenticate", function(done) {
             const encodedWrongCredentials = Buffer.from(`${credentials.name}:wrong`).toString("base64");
             basicAuth(createRequest(encodedWrongCredentials), createResponse((error) => done(assert.equal(error.message, "Shield Error"))), done);
+        });
+
+        it("should generate password hash", async function() {
+            const hash = await basicAuth.generateAuthentication(credentials);
+            assert.equal(hash.startsWith(appStub.locals.users[credentials.name].key.substr(0, 20)), true, "wrong auth hash");
         });
     });
 
@@ -165,11 +172,9 @@ describe("Authentication Service", function () {
 
         let tokenData;
         before(async function() {
-            const tokenResult = await authService.authenticate(credentials, ipAddress);
+            const tokenResult = await authService.authenticate(dummyAuth.bind(null, credentials), ipAddress);
             tokenData = tokenResult.signedData;
         });
-
-        const cookieAuthCheck = require("../lib/auth/cookie-auth-check")(authService, { cookieName: "token" });
 
         it("should check token", function(done) {
             const methodCallMock = new MethodCallMock();
@@ -180,7 +185,7 @@ describe("Authentication Service", function () {
                 },
                 secure: true
             };
-            const authCheck = require("../lib/check-auth")(cookieAuthCheck, methodCallMock.stubMethod);
+            const authCheck = require("../lib/check-auth")(cookieAuthFilter.check, methodCallMock.stubMethod);
             const next = (value) => {
                 try {
                     assert.equal(value, "route");
@@ -201,7 +206,7 @@ describe("Authentication Service", function () {
                     "token": "wrong token"
                 }
             };
-            const authCheck = require("../lib/check-auth")(cookieAuthCheck, methodCallMock.stubMethod);
+            const authCheck = require("../lib/check-auth")(cookieAuthFilter.check, methodCallMock.stubMethod);
             const next = (value) => {
                 try {
                     assert.equal(value, undefined);

@@ -44,10 +44,13 @@ Enables third party authentication through json web tokens.
 - `url` - handshake server
 - `cert` - server certificate in `pem` format
 
-### `logging`
-Customization of logging output.
-- `module` - module with logging customization function
-```
-async (morgan, executeSync, config) => {}
-```
-- `config` - custom module config (optional)
+### `plugins`
+Customization of internal services, when you need to pass config it has form of an array [ module, config (*optional*) ]
+
+- `authentication` - authentication provider
+  1. BasicAuthentication (*default*)
+  2. CertificateAuthentication
+- `logging` - custom logging output
+  ```
+  async (morgan, executeSync, config) => {}
+  ```
