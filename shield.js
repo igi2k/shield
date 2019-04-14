@@ -38,7 +38,7 @@ const resolveModule = (id) => {
 
 const configureService = (source, providers = []) => {
     const [ module, config ] =  !Array.isArray(source) ? [source] : source;
-    return [resolveModule(providers[module] || module), config];
+    return [providers[module] || resolveModule(module), config];
 };
 
 const configDirectory = Symbol("configDirectory");
@@ -49,8 +49,8 @@ const ShieldAccess = require("./lib/shield-access");
 
 const serviceProviders = {
     authentication: {
-        "BasicAuthentication": "./lib/auth/basic-auth",
-        "CertificateAuthentication": "./lib/auth/cert-auth"
+        "BasicAuthentication": require("./lib/auth/basic-auth"),
+        "CertificateAuthentication": require("./lib/auth/cert-auth")
     }
 };
 
