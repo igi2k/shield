@@ -6,11 +6,15 @@ class LoggerMock {
     
     containsError(message) {
         return !!this.errors.find((error) => {
-            if(error instanceof Error) {
+            if (error instanceof Error) {
                 return error.message === message;
             }
             return false;
         });
+    }
+
+    get hasErrors() {
+        return this.errors.length > 0;
     }
 
     get logger() {

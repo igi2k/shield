@@ -1,6 +1,8 @@
 const stm = require("../../lib/stm");
 const retryFn = require("./retry");
 
+require.main.paths.push(require("path").resolve(".")); // fix project based resolve for mocha
+
 module.exports = function workerTask(id, executionLimit, useRetryFn) {
 
     var clientMap = stm.region("clientMap");
@@ -12,7 +14,7 @@ module.exports = function workerTask(id, executionLimit, useRetryFn) {
     var retries = 0;
     var writes = 0;
 
-    if(id === 0) {
+    if (id === 0) {
         clientMap.clean();
     }
 
