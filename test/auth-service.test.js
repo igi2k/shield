@@ -234,9 +234,7 @@ describe("Authentication Service", function () {
 
         it("should exchange key", function() {
             const simpleSSO = require("../lib/auth/simple-sso");
-            const logger = {
-                error: () => {}
-            };
+            const loggerMock = new LoggerMock();
             const options = {
                 url: server.url,
                 cert: server.publicKey,
@@ -244,7 +242,8 @@ describe("Authentication Service", function () {
                     key: server.privateKey
                 }
             };
-            return simpleSSO(options, logger).then((result) => {
+            return simpleSSO(options, loggerMock.logger).then((result) => {
+                assert.equal(loggerMock.hasErrors, false, "contains errors");
                 assert.equal(result, server.secret);
             });
         });

@@ -66,7 +66,7 @@ describe("STM", function () {
                     return (out && result == undefined);
                 }, true);
 
-                if(!isUndefined) {
+                if (!isUndefined) {
                     throw new Error(JSON.stringify(result));
                 }
             });
@@ -81,7 +81,7 @@ describe("STM", function () {
                     return (out + result);
                 }, 0);
 
-                if(count != maxExecutions) {
+                if (count != maxExecutions) {
                     throw new Error(JSON.stringify(result));
                 }
             });
