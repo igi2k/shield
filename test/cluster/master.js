@@ -15,7 +15,7 @@ function fail(error) {
 if (!cluster.isMaster) {
     const workerTask = require(process.argv[2]);
     const writes = +process.argv[3];
-    const useRetryFn = process.argv[4] == "true";
+    const useRetryFn = process.argv[4] === "true";
     workerTask(cluster.worker.id, writes, useRetryFn).then(ok, fail).then(function () {
         process.disconnect();
     });
@@ -44,9 +44,9 @@ function startWorker() {
     var worker = cluster.fork();
 
     worker.on("message", function (message) {
-        if (message.type == "result") {
+        if (message.type === "result") {
             result.push(message.result);
-        } else if (message.type == "stm") {
+        } else if (message.type === "stm") {
             stm.handle(worker, message);
         } else {
             console.error("unsupported message: %s", JSON.stringify(message));
@@ -59,7 +59,7 @@ cluster.on("exit", function (worker, code, signal) {
     if (code !== 0) {
         console.error("main: Worker %d died with exit code %d (%s)", worker.id, code, signal);
     }
-    if (++finished == numCPUs) {
+    if (++finished === numCPUs) {
         process.send(result);
     }
 });

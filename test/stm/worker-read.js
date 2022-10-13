@@ -8,7 +8,7 @@ module.exports = async function workerTask(id) {
     }
 
     return clientMap.get(key).then((entry) => {
-        if (entry != undefined) {
+        if (entry != null) {
             throw new Error(JSON.stringify(entry));
         }
     });

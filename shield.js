@@ -196,7 +196,7 @@ async function bootstrap(logger, env) {
             title: "Mapping", 
             apps: config.apps,
             show: (app) => {
-                return app.access == undefined || auth && auth.hasRole(app.access);
+                return app.access == null || auth && auth.hasRole(app.access);
             }
         });
     });
@@ -215,7 +215,7 @@ async function bootstrap(logger, env) {
     /**
      * Error handler
      */
-    if (env == "development") {
+    if (env === "development") {
         sendError = (err, res, next) => {
             logger.error(err.stack || err);
             if (res.headersSent) {
@@ -310,7 +310,7 @@ async function startServer() {
 
 if (require.main === module) {
     // generate password hash
-    if (process.argv[2] == "hash") {
+    if (process.argv[2] === "hash") {
         return services["authentication"].generateAuthentication({
             name: process.argv[3],
             pass: process.argv[4]

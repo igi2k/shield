@@ -18,6 +18,8 @@
             { "objectsInObjects": false }
         ],
         "key-spacing": ["error"],
-        "keyword-spacing": ["error"]
+        "keyword-spacing": ["error"],
+        "eqeqeq": ["error", "always", { "null": "ignore" }],
+        "no-prototype-builtins": "off"
     }
 }

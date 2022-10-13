@@ -24,7 +24,7 @@ describe("core", function () {
             });
         });
         it("should handle error", function () {
-            return core.promisify(testError)(value).then(() => { throw new Error("No Error"); }).catch((error) => {
+            return core.promisify(testError)(value).then(() => { throw new Error("No Error") }).catch((error) => {
                 assert.equal(error.message, value);
             });
         });

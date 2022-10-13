@@ -9,14 +9,12 @@ module.exports = function workerTask(id, executionLimit) {
 
         function testCase(interval) {
             var intervalId = setInterval(function () {
-                if (executions.length == executionLimit) {
+                if (executions.length === executionLimit) {
                     clearInterval(intervalId);
                     return;
                 }
-                executions.push(queue.async(key, lockedBlock).then(function (id) {
-                    // console.log(id, executionLimit);
-                }));
-                if (executions.length == executionLimit) {
+                executions.push(queue.async(key, lockedBlock));
+                if (executions.length === executionLimit) {
                     Promise.all(executions).then(function () {
                         resolve({
                             worker: id,

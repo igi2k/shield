@@ -19,6 +19,10 @@ describe("Utility", function () {
             assert.equal(formatTime(5300), "5.300s");
         });
 
+        it("seconds ignore ms", () => {
+            assert.equal(formatTime(5300, undefined, true), "5s");
+        });
+
         it("minutes", () => {
             assert.equal(formatTime(533000), "8:53");
         });

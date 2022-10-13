@@ -1,6 +1,6 @@
 {
   "name": "@igi2k/shield",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "Authentication shield for web apps",
   "author": "Pavel Nejedly <pavel.nejedly@atlas.cz>",
   "repository": {
@@ -14,21 +14,22 @@
     "shield-certificate": "./bin/create-certificate.sh"
   },
   "dependencies": {
-    "argon2": "~0.26.2",
+    "argon2": "~0.29.1",
     "cookie-parser": "~1.4.5",
     "express": "~4.17.1",
     "gaikan": "~2.0.2",
     "jsonwebtoken": "~8.5.1",
-    "keytar": "~5.5.0",
+    "keytar": "~7.5.0",
     "morgan": "~1.10.0",
     "request": "~2.88.2"
   },
   "devDependencies": {
-    "eslint": "~6.8.0",
+    "eslint": "~8.25.0",
     "mocha": "~7.1.1"
   },
   "scripts": {
     "test": "mocha",
+    "lint": "eslint .",
     "start": "node shield-cluster",
     "get:hash": "node shield.js hash"
   },
@@ -36,6 +37,6 @@
     "reporter": "test/mocha/reporter.js"
   },
   "engines": {
-    "node": "~12.16.2"
+    "node": "^16"
   }
 }
