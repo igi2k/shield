@@ -14,7 +14,7 @@ describe("STM", function () {
         });
 
         function validate(result) {
-            if (!((result.entry.value == result.writes) && result.writes == maxExecutions)) {
+            if (!((result.entry.value === result.writes) && result.writes === maxExecutions)) {
                 throw new Error(JSON.stringify(result));
             }
         }
@@ -52,7 +52,7 @@ describe("STM", function () {
                 return out;
             }, { value: 0, writes: 0 });
 
-            if (!((max.value == max.writes) && max.writes == maxExecutions)) {
+            if (!((max.value === max.writes) && max.writes === maxExecutions)) {
                 throw new Error(JSON.stringify(result));
             }
         }
@@ -63,7 +63,7 @@ describe("STM", function () {
             return execute(["../stm/worker-read", maxExecutions, false])
             .then((result) => {
                 const isUndefined = result.reduce((out, result) => {
-                    return (out && result == undefined);
+                    return (out && result == null);
                 }, true);
 
                 if (!isUndefined) {
@@ -81,7 +81,7 @@ describe("STM", function () {
                     return (out + result);
                 }, 0);
 
-                if (count != maxExecutions) {
+                if (count !== maxExecutions) {
                     throw new Error(JSON.stringify(result));
                 }
             });

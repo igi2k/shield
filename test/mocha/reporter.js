@@ -16,7 +16,7 @@ function ReporterEx(runner) {
             test.__report = function () {
                 try {
                     return formatter.call(this, data);
-                } catch(error) {
+                } catch (error) {
                     return error;
                 }
             };
@@ -32,7 +32,7 @@ function ReporterEx(runner) {
         reportHook(test);
     });
     runner.on("test end", function (test) {
-        var testIndent = test.state == "failed" ? 4 : 3;
+        var testIndent = test.state === "failed" ? 4 : 3;
         if (test.__report) {
             console.log(indent(testIndent) + test.__report.call()); //eslint-disable-line
         }
